@@ -1,4 +1,6 @@
 # OpenMoxie
+⚠️ OFFICIAL SOURCE WARNING: This is the original and official repository for OpenMoxie. Please be aware that openmoxie.org and "OpenMoxie 2.0" are unaffiliated third-party projects. We cannot verify the safety or functionality of code downloaded from those sources.
+
 <p>
 <img src="./site/static/hive/openmoxie_logo.svg" width="200" height="200">
 Welcome!  You may be here looking for a solution to run your Embodied Moxie Robot
