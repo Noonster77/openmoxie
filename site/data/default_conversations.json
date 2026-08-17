@@ -59,6 +59,16 @@
       "max_volleys": 0
     },
     { 
+      "name": "OpenMoxie Trivia",
+      "source_version": 1,
+      "model": "gpt-4o-mini",
+      "module_id": "OPENMOXIE_TRIVIA",
+      "content_id": "default",
+      "prompt": "Deterministic local trivia game; no AI provider is used.",
+      "opener": "Let's play trivia!",
+      "max_volleys": 10
+    },
+    {
       "name": "Wakeup Launcher",
       "source_version": 2,
       "model": "gpt-4o-mini",

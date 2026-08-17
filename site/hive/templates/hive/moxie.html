@@ -16,7 +16,15 @@
           <option value="unpairing" {% if not object.is_paired %}selected{% endif %}>Unpaired/Blocked</option>
       </select>
     </td></tr>
-    <tr><th>Mentor Name</th><td><input type="text" class="form-control" name="nickname" value="{{active_config.child_pii.nickname}}"></td></tr>
+    <tr><th>Person's Name</th><td><input type="text" class="form-control" name="nickname" value="{{active_config.child_pii.nickname}}"><div class="form-text">The name Moxie uses for the person speaking with her.</div></td></tr>
+    <tr><th>Conversation Profile</th><td>
+      <textarea class="form-control" name="conversation_profile" rows="7">{{object.conversation_profile}}</textarea>
+      <div class="form-text">Server-only instructions supplied to the selected chat model. These are not installed on the robot.</div>
+    </td></tr>
+    <tr><th>Remember Conversations</th><td>
+      <input class="form-check-input" type="checkbox" name="conversation_memory_enabled" {% if object.conversation_memory_enabled %}checked{% endif %}>
+      <span class="ms-2">Include the most recent 10 exchanges in future conversations.</span>
+    </td></tr>
     <tr><th>Schedule</th><td>
         <select name="schedule">
             {% for schedule in schedules %}
@@ -35,6 +43,10 @@
     <tr><th>Mode</th><td>{{object.state.mode}}</td></tr>
   </table>
   <button type="submit" class="btn btn-primary">Save</button>
+  <a class="btn btn-secondary" href="{% url 'hive:moxie_launcher' object.pk %}">Mission Launcher</a>
+</form>
+<form class="mt-2" method="post" action="{% url 'hive:clear_conversation_memory' object.pk %}">
+  {% csrf_token %}<button class="btn btn-outline-danger" type="submit">Clear Conversation Memory</button>
 </form>
 </div>
 </div>

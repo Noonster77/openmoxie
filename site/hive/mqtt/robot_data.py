@@ -204,7 +204,20 @@ class RobotData:
         # persist is linked to the data record of our model object
         prec = robot_rec.get("persistent_data")
         data["persist"] = prec.data if prec else {}
+        try:
+            device = MoxieDevice.objects.get(device_id=robot_id)
+            data["conversation_profile"] = device.conversation_profile
+            data["conversation_memory_enabled"] = device.conversation_memory_enabled
+        except MoxieDevice.DoesNotExist:
+            data["conversation_profile"] = ""
+            data["conversation_memory_enabled"] = False
         return data
+
+    def save_persistent_data(self, robot_id):
+        """Persist memory immediately so a server/robot disconnect cannot lose a chat."""
+        prec = self._robot_map.get(robot_id, {}).get("persistent_data")
+        if prec:
+            prec.save(update_fields=['data'])
 
     # Save robot state data
     def put_state(self, robot_id, state):

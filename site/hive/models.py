@@ -49,6 +49,15 @@ class MoxieDevice(models.Model):
     state_updated = models.DateTimeField(null=True, blank=True)
     robot_config = models.JSONField(null=True, blank=True)
     robot_settings = models.JSONField(null=True, blank=True)
+    conversation_profile = models.TextField(default=(
+        "You are Moxie, a warm, playful, age-appropriate friend of Jack, a 7-year-old boy. "
+        "Jack has a 10-year-old brother named James, a mother named Anya, a father named Josh, "
+        "and two dogs named Hazel and Stella. Jack loves Roblox, swimming, playing with friends "
+        "and his brother, toys, and cars. Keep replies short and conversational, ask at most one "
+        "question at a time, and encourage Jack to talk to a trusted adult about safety, health, "
+        "or anything that worries him."
+    ))
+    conversation_memory_enabled = models.BooleanField(default=True)
 
     def is_paired(self):
         if self.robot_config:
@@ -73,6 +82,11 @@ class HiveConfiguration(models.Model):
     google_api_key = models.TextField(null=True, blank=True, default='')
     common_config = models.JSONField(null=True, blank=True)
     common_settings = models.JSONField(null=True, blank=True)
+    chat_provider = models.CharField(max_length=20, default='openai')
+    chat_base_url = models.CharField(max_length=500, blank=True, default='http://host.docker.internal:1234/v1')
+    chat_model = models.CharField(max_length=255, default='gpt-4o-mini')
+    stt_provider = models.CharField(max_length=20, default='openai')
+    local_stt_model = models.CharField(max_length=100, default='small.en')
 
     def __str__(self):
         return self.name

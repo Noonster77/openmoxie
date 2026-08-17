@@ -24,7 +24,7 @@
 <h3>Getting Your Own OpenAI API Key</h3>
 <p>
   There are a few requirements to setup before you can use this with your Moxie.  The primary requirement
-  is your own personal API key from OpenAI to use for Moxie Chat and the default Speech-to-Text processing.
+  is either your own personal API key from OpenAI or locally running AI models. OpenAI remains the default for Moxie Chat and Speech-to-Text.
   These services are not free and you will be responsible for managing your OpenAI account to ensure
   it has sufficient credits, however Whisper is very inexpensive and the default conversational model
   (3.5 turbo) is a very economical model.
@@ -55,6 +55,53 @@
       <label for="apikey" class="form-label fw-bold fs-5">OpenAI API Key</label>
       <input type="text" class="form-control" name="apikey" id="apikey" aria-describedby="apiHelp" placeholder="{% if object.openai_api_key %}[Key exists and will be kept unless overridden.]{% else %}Paste OpenAI API key.{% endif %}">
       <div id="apiHelp" class="form-text text-light">This be be stored in your local database and used locally for AI and Speech services.</div>
+    </div>
+    <h3>Conversation AI</h3>
+    <div class="row mb-3">
+      <label for="chat_provider" class="col-sm-3 col-form-label fw-bold">Chat Provider</label>
+      <div class="col-sm-9"><select class="form-select" name="chat_provider" id="chat_provider">
+        <option value="openai" {% if object.chat_provider != 'lmstudio' %}selected{% endif %}>OpenAI API</option>
+        <option value="lmstudio" {% if object.chat_provider == 'lmstudio' %}selected{% endif %}>LM Studio (local)</option>
+      </select></div>
+    </div>
+    <div class="row mb-3">
+      <label for="chat_model" class="col-sm-3 col-form-label fw-bold">Chat Model</label>
+      <div class="col-sm-9"><input class="form-control" name="chat_model" id="chat_model" value="{{object.chat_model|default:'gpt-4o-mini'}}">
+        <div class="form-text text-light">For LM Studio, copy the loaded model identifier shown in its Developer tab.</div>
+      </div>
+    </div>
+    <div class="row mb-3">
+      <label for="chat_base_url" class="col-sm-3 col-form-label fw-bold">LM Studio Base URL</label>
+      <div class="col-sm-9"><input class="form-control" name="chat_base_url" id="chat_base_url" value="{{object.chat_base_url|default:'http://host.docker.internal:1234/v1'}}">
+        <div class="form-text text-light">Use <kbd>http://host.docker.internal:1234/v1</kbd> because OpenMoxie runs inside Docker.</div>
+      </div>
+    </div>
+    <h3>Speech Recognition</h3>
+    <div class="row mb-3">
+      <label for="stt_provider" class="col-sm-3 col-form-label fw-bold">Speech Provider</label>
+      <div class="col-sm-9"><select class="form-select" name="stt_provider" id="stt_provider">
+        <option value="openai" {% if object.stt_provider != 'local' %}selected{% endif %}>OpenAI Whisper API</option>
+        <option value="local" {% if object.stt_provider == 'local' %}selected{% endif %}>Local faster-whisper (no API charge)</option>
+      </select></div>
+    </div>
+    <div class="row mb-3">
+      <label for="local_stt_model" class="col-sm-3 col-form-label fw-bold">Local Whisper Model</label>
+      <div class="col-sm-9"><select class="form-select" name="local_stt_model" id="local_stt_model">
+        <option value="tiny.en" {% if object.local_stt_model == 'tiny.en' %}selected{% endif %}>tiny.en - fastest, least accurate</option>
+        <option value="base.en" {% if object.local_stt_model == 'base.en' %}selected{% endif %}>base.en - fast</option>
+        <option value="small.en" {% if object.local_stt_model == 'small.en' or not object %}selected{% endif %}>small.en - recommended</option>
+        <option value="medium.en" {% if object.local_stt_model == 'medium.en' %}selected{% endif %}>medium.en - slower, more accurate</option>
+      </select><div class="form-text text-light">The model downloads once on the first spoken request and is cached under <kbd>site/work/models</kbd>.</div></div>
+    </div>
+    <div class="alert alert-info">
+      <strong>LM Studio local setup:</strong>
+      <ol class="mb-0">
+        <li>Import/load the downloaded Qwen GGUF in LM Studio.</li>
+        <li>Open <strong>Developer</strong>, start the local server on port <strong>1234</strong>, and enable serving on the local network if LM Studio requires it for Docker access.</li>
+        <li>Copy LM Studio's exact loaded model identifier into <strong>Chat Model</strong>.</li>
+        <li>Select <strong>LM Studio (local)</strong>, keep the Docker URL above, save, then use a conversation's <strong>Interact</strong> link to test it.</li>
+      </ol>
+      Local faster-whisper needs no separate app. Its first transcription is slower while the selected model downloads and loads; later requests use the cached model.
     </div>
     <div class="mb-3">
       <label for="googleapikey" class="form-label fw-bold fs-5">(OPTIONAL) Google Service Account Key</label>

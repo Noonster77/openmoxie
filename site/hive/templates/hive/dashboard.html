@@ -24,8 +24,11 @@
     <p class="text-muted mt-2 mb-0 small">This panel refreshes automatically. "Broker connected" confirms the OpenMoxie server reached MQTT; "Last robot activity" confirms Moxie itself reached the broker.</p>
   </div>
 </div>
-<div class="alert {% if openai_configured %}alert-info{% else %}alert-warning{% endif %}">
-  <strong>OpenAI:</strong> {% if openai_configured %}API key configured. API billing/quota is checked only when a conversation request is made.{% else %}No API key configured; AI conversations cannot run.{% endif %}
+<div class="alert {% if ai_config.chat_provider == 'lmstudio' or openai_configured %}alert-info{% else %}alert-warning{% endif %}">
+  <strong>AI:</strong> Chat provider: <strong>{{ai_config.chat_provider|default:"not configured"}}</strong>
+  {% if ai_config %}({{ai_config.chat_model}}); speech provider: <strong>{{ai_config.stt_provider}}</strong>{% endif %}.
+  {% if ai_config.chat_provider == 'openai' and not openai_configured %}An OpenAI key is required for chat.{% endif %}
+  <form class="d-inline ms-2" method="post" action="{% url 'hive:test_ai_connection' %}">{% csrf_token %}<button class="btn btn-sm btn-outline-dark" type="submit">Test AI Connection</button></form>
 </div>
 <h2>Devices</h2>
 <a title="Code to show Moxie to move to this service" class="btn btn-primary btn-sm" role="button" href="{% url 'hive:endpoint_qr' %}">Migration QR Code</a>
@@ -58,6 +61,7 @@
     </form>
     {% endif %}
     <a title="Modify completed missions or reset content progress" class="btn btn-secondary btn-sm" href="{% url 'hive:moxie_missions' device.pk %}">Missions</a>
+    <a title="Launch a built-in or OpenMoxie mission" class="btn btn-primary btn-sm" href="{% url 'hive:moxie_launcher' device.pk %}">Launch Mission</a>
     <a title="Customize Moxie's Face" class="btn btn-secondary btn-sm" href="{% url 'hive:face' device.pk %}">Edit Face</a>
     <a title="Puppeteer Moxie" class="btn btn-secondary btn-sm" href="{% url 'hive:puppet' device.pk %}">Puppet</a>
     <a title="View Moxie persistent data." class="btn btn-secondary btn-sm" href="{% url 'hive:moxie_data' device.pk %}">Data</a>

@@ -24,7 +24,7 @@ There's no parent app, all configuration is done through the web interface to Op
 1.  You need a computer of some kind (PC, Linux, Mac, Raspberry Pi5) on the same wireless network you intend to use
 your Moxie on.  This wireless network should be reasonable secure and should have a firewall, which is mostly what
 home networks look like these days.
-2. You need An account with OpenAI and credits to pay for Speech-to-Text and Chat
+2. You need either an OpenAI account with credits, or local models for chat and speech as described below
 3. You need to install Docker (Docker Desktop https://www.docker.com/products/docker-desktop/ for example), don't buy any license as this is for personal use
 
 # Quick Start
@@ -121,6 +121,19 @@ python3 site/manage.py runserver --noreload
 ```
 
 Once it is running, you may visit http://localhost:8000/hive for the dashboard.
+
+## Zero-cost local AI with LM Studio and Whisper
+
+OpenMoxie can use local models without paid API requests. Chat and speech recognition are separate settings, so both must be changed on the Setup page for a fully local configuration.
+
+1. Install LM Studio and import/load a chat GGUF, such as Qwen3.5 9B Q4_K_S.
+2. In LM Studio's Developer tab, start the local API server on port `1234`. Allow local-network access if LM Studio offers that switch; the OpenMoxie Docker container must be able to reach the host.
+3. Copy the exact loaded model identifier shown by LM Studio.
+4. In OpenMoxie Setup, choose `LM Studio (local)`, enter that identifier, and use `http://host.docker.internal:1234/v1` as the base URL.
+5. Choose `Local faster-whisper` for speech. `small.en` is the recommended starting point.
+6. Save, then test a conversation from the dashboard's Interact link.
+
+The local Whisper model downloads on the first spoken request and is cached in `local/work/models`. That first transcription can take noticeably longer. Subsequent transcriptions reuse the loaded model. LM Studio does not provide the audio transcription endpoint used by Moxie, and the Qwen chat GGUF is not a Whisper model, which is why OpenMoxie runs faster-whisper separately.
 
 # MQTT Broker - Direct Install
 

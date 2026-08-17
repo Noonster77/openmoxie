@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="moxheader"><a href="{% url 'hive:dashboard' %}"><img class="moximage" src="{% static 'hive/openmoxie_logo.svg' %}"></a>OpenMoxie<span class="moxversion">{{moxie_version}}</span></div>
+<div class="p-3">
+  <h2>Mission Launcher — {{object}}</h2>
+  <div class="alert {% if online %}alert-success{% else %}alert-warning{% endif %}">
+    Moxie is {% if online %}online. Launch sets the selected mission as the wake mission and sends Wake now.{% else %}offline. The selected mission will be saved for the next wake.{% endif %}
+  </div>
+  <h3>OpenMoxie Missions</h3>
+  <div class="row g-2 mb-4">
+  {% for mission in remote_modules %}
+    <div class="col-md-4"><form method="post" action="{% url 'hive:launch_mission' object.pk %}">
+      {% csrf_token %}<input type="hidden" name="module_id" value="{{mission.module_id}}"><input type="hidden" name="content_id" value="{{mission.content_id}}">
+      <button class="btn btn-primary w-100" type="submit">{{mission.name}}<br><small>{{mission.module_id}}/{{mission.content_id}}</small></button>
+    </form></div>
+  {% endfor %}
+  </div>
+  <h3>Built-in Robot Missions</h3>
+  <div class="row g-2">
+  {% for mission in built_in_modules %}
+    <div class="col-md-3"><form method="post" action="{% url 'hive:launch_mission' object.pk %}">
+      {% csrf_token %}<input type="hidden" name="module_id" value="{{mission.module_id}}">
+      <button class="btn btn-secondary w-100" type="submit">{{mission.module_id}}<br><small>{{mission.category|title}}</small></button>
+    </form></div>
+  {% endfor %}
+  </div>
+</div>
+{% endblock %}

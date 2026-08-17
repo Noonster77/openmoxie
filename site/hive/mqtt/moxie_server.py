@@ -11,7 +11,7 @@ import base64
 import ssl
 import threading
 from datetime import datetime, timezone
-from .ai_factory import set_openai_key
+from .ai_factory import set_openai_key, configure_ai
 from .robot_credentials import RobotCredentials
 from .robot_data import RobotData
 from .moxie_remote_chat import RemoteChat
@@ -549,6 +549,9 @@ class MoxieServer:
     def update_from_database(self):
         hive_config = HiveConfiguration.objects.filter(name="default").first()
         set_openai_key(hive_config.openai_api_key if hive_config else None)
+        if hive_config:
+            configure_ai(hive_config.chat_provider, hive_config.chat_base_url, hive_config.chat_model,
+                         hive_config.stt_provider, hive_config.local_stt_model)
         self._google_service_account = hive_config.google_api_key if hive_config else None
         self._remote_chat.update_from_database()
 

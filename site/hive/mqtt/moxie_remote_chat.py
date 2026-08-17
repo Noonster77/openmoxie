@@ -17,7 +17,7 @@ from ..automarkup import initialize_rules as automarkup_initialize_rules
 import logging
 from datetime import datetime
 from .global_responses import GlobalResponses
-from .conversations import ChatSession, SinglePromptDBChatSession
+from .conversations import ChatSession, SinglePromptDBChatSession, TriviaChatSession
 from .volley import Volley
 
 # Turn on to enable global commands in the cloud
@@ -60,7 +60,10 @@ class RemoteChat:
             # one module can support many content IDs, separated by | like openers
             cid_list = chat.content_id.split('|')
             for content_id in cid_list:
-                new_modules[f'{chat.module_id}/{content_id}'] = { 'xtor': SinglePromptDBChatSession, 'params': { 'pk': chat.pk } }
+                if chat.module_id == 'OPENMOXIE_TRIVIA':
+                    new_modules[f'{chat.module_id}/{content_id}'] = { 'xtor': TriviaChatSession, 'params': {} }
+                else:
+                    new_modules[f'{chat.module_id}/{content_id}'] = { 'xtor': SinglePromptDBChatSession, 'params': { 'pk': chat.pk } }
                 logger.debug(f'Registering {chat.module_id}/{content_id}')
                 # Group content IDs under module IDs
                 if chat.module_id in mod_map:
@@ -132,6 +135,7 @@ class RemoteChat:
     # Get the next response to a chat
     def create_session_response(self, device_id, sess:ChatSession, volley: Volley):
         sess.handle_volley(volley)
+        self._server.robot_data().save_persistent_data(device_id)
         if 'markup' not in volley.response['output']:
             # if we don't have markup, create it
             text = volley.response['output']['text']

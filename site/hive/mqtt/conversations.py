@@ -7,7 +7,7 @@ import random
 import re
 import traceback
 from django.template import Template, Context
-from .ai_factory import create_openai
+from .ai_factory import chat_completion
 from ..models import SinglePromptChat
 from .volley import Volley
 
@@ -27,7 +27,7 @@ class ChatSession:
         self._local_data = {}
 
     def add_history(self, role, message, history=None):
-        if not history:
+        if history is None:
             history = self._history
             self._total_volleys += 1
         if history and history[-1].get("role") == role:
@@ -36,7 +36,7 @@ class ChatSession:
         else:
             history.append({ "role": role, "content": message })
             if len(history) > self._max_history:
-                history = history[-self._max_history:]
+                del history[:-self._max_history]
 
     def is_empty(self):
         return len(self._history) == 0
@@ -136,9 +136,27 @@ class SingleContextChatSession(ChatSession):
     # Render an updated prompt context for this volley
     def make_volley_context(self, volley:Volley):
         ctx = self._prompt_template.render(Context({'volley': volley, 'session': self}))
+        ctx += "\n\nYour response will be spoken aloud by Moxie. Do not use emoji, markdown, lists, or stage directions. Finish every sentence."
+        if volley.conversation_profile:
+            ctx += "\n\nCHILD PROFILE AND CONVERSATION RULES:\n" + volley.conversation_profile
+        if volley.conversation_memory_enabled:
+            remembered = volley.persist_data.get('conversation_memory', {}).get('recent', [])
+            if remembered:
+                memory_lines = [f"{item.get('role', 'user')}: {item.get('content', '')}" for item in remembered[-20:]]
+                ctx += "\n\nRECENT CONVERSATION MEMORY (use naturally; do not claim perfect memory):\n" + "\n".join(memory_lines)
         return [ { "role": "system", 
                     "content": ctx
                     } ]
+
+    def remember_exchange(self, volley, speech, response):
+        if not volley.conversation_memory_enabled:
+            return
+        recent = volley.persist_data.setdefault('conversation_memory', {}).setdefault('recent', [])
+        recent.extend([
+            {'role': 'user', 'content': speech},
+            {'role': 'assistant', 'content': response},
+        ])
+        del recent[:-20]
     
     # Handle Moxie saying something, accumulate to history
     def ingest_notify(self, volley:Volley):
@@ -168,6 +186,7 @@ class SingleContextChatSession(ChatSession):
             else:
                 speech = "hm" if volley.request.get("command")=="reprompt" else volley.request["speech"]
                 text,overflow = self.next_response(speech, self.make_volley_context(volley))
+                self.remember_exchange(volley, speech, text)
             volley.set_output(text, None)
             if overflow:
                 volley.add_launch_or_exit()
@@ -196,13 +215,12 @@ class SingleContextChatSession(ChatSession):
             history = copy.deepcopy(self._history)
             self.add_history('user', speech, history)
         try:
-            client = create_openai()
-            resp = client.chat.completions.create(
-                        model=self._model,
-                        messages=context + history,
-                        max_tokens=self._max_tokens,
-                        temperature=self._temperature
-                    ).choices[0].message.content
+            resp = chat_completion(
+                context + history,
+                fallback_model=self._model,
+                max_tokens=self._max_tokens,
+                temperature=self._temperature,
+            )
         except Exception as e:
             logger.warning(f'Exception attempting inference: {e}')
             resp = "Oh no.  I have run into a bug"
@@ -227,7 +245,6 @@ class SingleContextChatSession(ChatSession):
                 model = self._model
             if not max_tokens:
                 max_tokens = self._max_tokens
-            client = create_openai()
             prompt = prompt_base if prompt_base else _DEFAULT_SUMMARY_PROMPT
             if append_transcript:
                 # Concatenate the chat history into a single string
@@ -237,12 +254,12 @@ class SingleContextChatSession(ChatSession):
             msgs = [ { "role": "user", 
                 "content": prompt
                 } ]
-            resp = client.chat.completions.create(
-                    model=model,
-                    messages=msgs,
-                    max_tokens=max_tokens,
-                    temperature=self._temperature
-                    ).choices[0].message.content
+            resp = chat_completion(
+                msgs,
+                fallback_model=model,
+                max_tokens=max_tokens,
+                temperature=self._temperature,
+            )
             return resp
         except Exception as e:
             stack = traceback.format_exc()
@@ -275,3 +292,52 @@ class SinglePromptDBChatSession(SingleContextChatSession):
                                  notify_handler=loc.get('notify_handler'))
             except Exception as e:
                 logger.error(f"Error loading code for chat session: {e}")
+
+
+class TriviaChatSession(ChatSession):
+    """Deterministic, API-free trivia with a score kept for the current game."""
+    QUESTIONS = [
+        ("What planet do we live on?", ("earth",)),
+        ("How many legs does a spider have?", ("eight", "8")),
+        ("What is frozen water called?", ("ice",)),
+        ("Which animal says moo?", ("cow",)),
+        ("How many days are in a week?", ("seven", "7")),
+        ("What is the largest ocean on Earth?", ("pacific",)),
+        ("What do caterpillars turn into?", ("butterfly", "butterflies")),
+        ("Which shape has three sides?", ("triangle",)),
+        ("What gas do people need to breathe?", ("oxygen",)),
+        ("What is ten plus five?", ("fifteen", "15")),
+    ]
+
+    def __init__(self):
+        super().__init__(max_history=0)
+        self.reset_game()
+
+    def reset_game(self):
+        self._local_data['trivia_index'] = 0
+        self._local_data['trivia_score'] = 0
+
+    def handle_volley(self, volley: Volley):
+        volley.assign_local_data(self._local_data)
+        if volley.request.get('command') == 'prompt':
+            self.reset_game()
+            text = "Let's play trivia! I'll keep score. " + self.QUESTIONS[0][0]
+        else:
+            index = self._local_data['trivia_index']
+            speech = volley.request.get('speech', '').lower()
+            correct = any(re.search(rf'\b{re.escape(answer)}\b', speech) for answer in self.QUESTIONS[index][1])
+            if correct:
+                self._local_data['trivia_score'] += 1
+                result = "Correct!"
+            else:
+                result = f"Good try! The answer is {self.QUESTIONS[index][1][0]}."
+            index += 1
+            self._local_data['trivia_index'] = index
+            if index >= len(self.QUESTIONS):
+                score = self._local_data['trivia_score']
+                text = f"{result} You scored {score} out of {len(self.QUESTIONS)}. Great game!"
+                volley.set_output(text, None)
+                volley.add_launch_or_exit()
+                return
+            text = f"{result} Your score is {self._local_data['trivia_score']} out of {index}. Next question: {self.QUESTIONS[index][0]}"
+        volley.set_output(text, None)

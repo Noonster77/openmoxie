@@ -7,9 +7,11 @@ from unittest.mock import MagicMock, patch
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
-from .models import MoxieDevice, MoxieSchedule
+from .models import HiveConfiguration, MoxieDevice, MoxieSchedule, SinglePromptChat
 from .mqtt.moxie_server import MoxieServer
 from .mqtt.robot_data import RobotData
+from .mqtt.conversations import ChatSession, TriviaChatSession
+from .mqtt.volley import Volley
 
 
 class MQTTServiceTests(SimpleTestCase):
@@ -121,3 +123,56 @@ class WakeControlTests(TestCase):
             self.device.schedule.schedule["wake_module"],
             {"module_id": "OPENMOXIE_CHAT", "content_id": "default"},
         )
+
+
+class LocalAIAndMissionTests(TestCase):
+    @patch("hive.views.get_instance")
+    def test_setup_saves_independent_local_chat_and_stt_choices(self, get_instance):
+        response = self.client.post(reverse('hive:hive_configure'), {
+            'apikey': '', 'googleapikey': '', 'hostname': 'moxie-pc',
+            'chat_provider': 'lmstudio',
+            'chat_base_url': 'http://host.docker.internal:1234/v1',
+            'chat_model': 'qwen-local',
+            'stt_provider': 'local',
+            'local_stt_model': 'small.en',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        config = HiveConfiguration.objects.get(name='default')
+        self.assertEqual(config.chat_provider, 'lmstudio')
+        self.assertEqual(config.stt_provider, 'local')
+
+    def test_history_limit_mutates_the_actual_history(self):
+        session = ChatSession(max_history=2)
+        session.add_history('user', 'one')
+        session.add_history('assistant', 'two')
+        session.add_history('user', 'three')
+
+        self.assertEqual([item['content'] for item in session._history], ['two', 'three'])
+
+    def test_trivia_scores_correct_answer_and_asks_next_question(self):
+        session = TriviaChatSession()
+        opener = Volley.request_from_speech('', device_id='test', module_id='OPENMOXIE_TRIVIA', content_id='default')
+        session.handle_volley(opener)
+        answer = Volley.request_from_speech('We live on Earth', device_id='test', module_id='OPENMOXIE_TRIVIA', content_id='default')
+        session.handle_volley(answer)
+
+        self.assertIn('Correct', answer.response['output']['text'])
+        self.assertIn('score is 1 out of 1', answer.response['output']['text'])
+
+    @patch("hive.views.get_instance")
+    def test_launcher_sets_selected_remote_mission_as_wake_module(self, get_instance):
+        schedule = MoxieSchedule.objects.create(name='base', schedule={'provided_schedule': []})
+        device = MoxieDevice.objects.create(device_id='d_launch', schedule=schedule)
+        SinglePromptChat.objects.create(name='Trivia', module_id='OPENMOXIE_TRIVIA', content_id='default', opener='Hi', prompt='Trivia')
+        get_instance.return_value.send_wakeup_to_bot.return_value = False
+
+        response = self.client.post(reverse('hive:launch_mission', args=[device.pk]), {
+            'module_id': 'OPENMOXIE_TRIVIA', 'content_id': 'default',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        device.refresh_from_db()
+        self.assertEqual(device.schedule.schedule['wake_module'], {
+            'module_id': 'OPENMOXIE_TRIVIA', 'content_id': 'default',
+        })

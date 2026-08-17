@@ -6,12 +6,33 @@ import io
 import time
 import logging
 import concurrent.futures
+import os
+import threading
 from .ai_factory import create_openai
+from .ai_factory import get_stt_config
 
 LOG_WAV=False
 OPENAI_MODEL='whisper-1'
 
 logger = logging.getLogger(__name__)
+_LOCAL_MODELS = {}
+_LOCAL_MODELS_LOCK = threading.Lock()
+
+
+def get_local_whisper(model_name):
+    """Lazily download/load a CPU Whisper model and reuse it across utterances."""
+    with _LOCAL_MODELS_LOCK:
+        if model_name not in _LOCAL_MODELS:
+            from faster_whisper import WhisperModel
+            download_root = os.environ.get('OPENMOXIE_MODEL_DIR', '/app/site/work/models')
+            logger.info('Loading local Whisper model %s from %s', model_name, download_root)
+            _LOCAL_MODELS[model_name] = WhisperModel(
+                model_name,
+                device='cpu',
+                compute_type='int8',
+                download_root=download_root,
+            )
+        return _LOCAL_MODELS[model_name]
 
 def now_ms():
     return time.time_ns() // 1_000_000
@@ -55,20 +76,30 @@ class STTSession:
         resp.timestamp = now_ms()
 
         try:
-            client = create_openai()
-            transcript = client.audio.transcriptions.create(
-                file=('test.wav', wav_bytes),
-                model=OPENAI_MODEL,
-                response_format="verbose_json",
-                timestamp_granularities=["word"])
-            resp.speech = transcript.text
-            min_start = min(d.start for d in transcript.words) if transcript.words else 0
-            max_end = max(d.end for d in transcript.words) if transcript.words else 0
+            provider, local_model = get_stt_config()
+            if provider == 'local':
+                model = get_local_whisper(local_model)
+                segments, _ = model.transcribe(io.BytesIO(wav_bytes), language='en', vad_filter=True)
+                segments = list(segments)
+                transcript_text = ''.join(segment.text for segment in segments).strip()
+                min_start = min((segment.start for segment in segments), default=0)
+                max_end = max((segment.end for segment in segments), default=0)
+            else:
+                client = create_openai()
+                transcript = client.audio.transcriptions.create(
+                    file=('test.wav', wav_bytes),
+                    model=OPENAI_MODEL,
+                    response_format="verbose_json",
+                    timestamp_granularities=["word"])
+                transcript_text = transcript.text
+                min_start = min((d.start for d in transcript.words), default=0)
+                max_end = max((d.end for d in transcript.words), default=0)
+            resp.speech = transcript_text
             resp.start_timestamp = self._start_ts + int(min_start*1000)
             resp.end_timestamp = self._start_ts + int(max_end*1000)
-            logger.info(f'STT-FINAL: {transcript.text}')
+            logger.info('STT-FINAL [%s]: %s', provider, transcript_text)
         except Exception as e:
-            logger.warning(f'Exception handling openAI request: {e}')
+            logger.exception('Exception handling speech transcription')
             resp.error_code = 66
             resp.error_message = str(e)
 

@@ -60,6 +60,14 @@ class Volley:
         return self._robot_data.get("state",{})
 
     @property
+    def conversation_profile(self):
+        return self._robot_data.get("conversation_profile", "")
+
+    @property
+    def conversation_memory_enabled(self):
+        return self._robot_data.get("conversation_memory_enabled", False)
+
+    @property
     def entities(self):
         return self._local_data.get("entities",[])
     

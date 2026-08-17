@@ -15,11 +15,12 @@ from io import BytesIO
 from copy import deepcopy
 
 from .models import GlobalResponse, SinglePromptChat, MoxieDevice, MoxieSchedule, HiveConfiguration, MentorBehavior
-from .content.data import DM_MISSION_CONTENT_IDS, get_moxie_customization_groups
+from .content.data import DM_MISSION_CONTENT_IDS, RECOMMENDABLE_MODULES, get_moxie_customization_groups
 from .data_import import update_import_status, import_content
 from .mqtt.moxie_server import get_instance
 from .mqtt.robot_data import DEFAULT_ROBOT_CONFIG, DEFAULT_ROBOT_SETTINGS
 from .mqtt.volley import Volley
+from .mqtt.ai_factory import create_chat_client, get_chat_model
 import json
 import uuid
 import logging
@@ -59,6 +60,15 @@ def hive_configure(request):
         # Moxie likes compact json, so rewrite json input to be safe
         cfg.google_api_key = json.dumps(json.loads(google))
     cfg.external_host = request.POST['hostname']
+    cfg.chat_provider = request.POST.get('chat_provider', 'openai')
+    cfg.chat_base_url = request.POST.get('chat_base_url', '').strip()
+    cfg.chat_model = request.POST.get('chat_model', 'gpt-4o-mini').strip() or 'gpt-4o-mini'
+    cfg.stt_provider = request.POST.get('stt_provider', 'openai')
+    cfg.local_stt_model = request.POST.get('local_stt_model', 'small.en').strip() or 'small.en'
+    if cfg.chat_provider not in ('openai', 'lmstudio') or cfg.stt_provider not in ('openai', 'local'):
+        return HttpResponseBadRequest('Unsupported AI provider selection.')
+    if cfg.chat_provider == 'lmstudio' and not cfg.chat_base_url.startswith(('http://', 'https://')):
+        return HttpResponseBadRequest('LM Studio base URL must begin with http:// or https://')
     cfg.allow_unverified_bots = request.POST.get('allowall') == "on"
     # Bootstrap any default data if not present
     if not cfg.common_config:
@@ -103,6 +113,7 @@ class DashboardView(generic.TemplateView):
         }
         hive_config = HiveConfiguration.objects.filter(name='default').first()
         context['openai_configured'] = bool(hive_config and (hive_config.openai_api_key or '').strip())
+        context['ai_config'] = hive_config
         return context
 
 # STATUS - Lightweight, credential-free diagnostics used by the dashboard.
@@ -115,6 +126,26 @@ def connection_status(request):
             'connected_devices': [],
         }, status=503)
     return JsonResponse(service.service_status())
+
+
+@require_http_methods(["POST"])
+def test_ai_connection(request):
+    cfg = HiveConfiguration.objects.filter(name='default').first()
+    if not cfg:
+        return redirect('hive:dashboard_alert', alert_message='AI is not configured yet.')
+    try:
+        models = create_chat_client().models.list()
+        model_ids = [model.id for model in models.data]
+        selected = get_chat_model()
+        if cfg.chat_provider == 'lmstudio' and selected not in model_ids:
+            sample = ', '.join(model_ids[:5]) or 'none reported'
+            message = f'LM Studio is reachable, but model "{selected}" was not reported. Available: {sample}'
+        else:
+            message = f'{cfg.chat_provider.title()} is reachable and model "{selected}" is configured.'
+    except Exception as exc:
+        logger.exception('AI connection test failed')
+        message = f'AI connection failed: {exc}'
+    return redirect('hive:dashboard_alert', alert_message=message.replace('/', ' - '))
 
 # INTERACT - Chat with a remote conversation
 class InteractionView(generic.DetailView):
@@ -195,6 +226,8 @@ def moxie_edit(request, pk):
         device = MoxieDevice.objects.get(pk=pk)
         # changes to base model
         device.name = request.POST["moxie_name"]
+        device.conversation_profile = request.POST.get('conversation_profile', '').strip()
+        device.conversation_memory_enabled = request.POST.get('conversation_memory_enabled') == 'on'
         device.schedule = MoxieSchedule.objects.get(pk=request.POST["schedule"])
         # changes to json field inside config
         if device.robot_config == None:
@@ -213,6 +246,64 @@ def moxie_edit(request, pk):
     except MoxieDevice.DoesNotExist as e:
         logger.warning("Moxie update for unfound pk {pk}")
     return HttpResponseRedirect(reverse("hive:dashboard"))
+
+
+@require_http_methods(["POST"])
+def clear_conversation_memory(request, pk):
+    device = get_object_or_404(MoxieDevice, pk=pk)
+    pdata = get_instance().robot_data().get_persist_for_device(device)
+    pdata.pop('conversation_memory', None)
+    persistent = getattr(device, 'persistentdata', None)
+    if persistent:
+        persistent.data = pdata
+        persistent.save(update_fields=['data'])
+    return redirect('hive:dashboard_alert', alert_message=f'Cleared conversation memory for {device}.')
+
+
+class MoxieLauncherView(generic.DetailView):
+    template_name = 'hive/launcher.html'
+    model = MoxieDevice
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['built_in_modules'] = RECOMMENDABLE_MODULES
+        context['remote_modules'] = [
+            {'name': chat.name, 'module_id': chat.module_id, 'content_id': content_id}
+            for chat in SinglePromptChat.objects.order_by('name')
+            for content_id in chat.content_id.split('|')
+        ]
+        context['online'] = get_instance().robot_data().device_online(self.object.device_id)
+        return context
+
+
+@require_http_methods(["POST"])
+def launch_mission(request, pk):
+    device = get_object_or_404(MoxieDevice, pk=pk)
+    module_id = request.POST.get('module_id', '').strip()
+    content_id = request.POST.get('content_id', '').strip()
+    allowed_native = {item['module_id'] for item in RECOMMENDABLE_MODULES}
+    allowed_remote = SinglePromptChat.objects.filter(module_id=module_id).exists()
+    if not module_id or (module_id not in allowed_native and not allowed_remote):
+        return HttpResponseBadRequest('Unknown mission module.')
+    base_schedule = deepcopy(device.schedule.schedule) if device.schedule else {'provided_schedule': []}
+    wake_module = {'module_id': module_id}
+    if content_id:
+        wake_module['content_id'] = content_id
+    base_schedule['wake_module'] = wake_module
+    launch_schedule, _ = MoxieSchedule.objects.update_or_create(
+        name=f'Launch {module_id} - {device.device_id}',
+        defaults={'schedule': base_schedule, 'source_version': 1},
+    )
+    device.schedule = launch_schedule
+    if device.robot_config is None:
+        device.robot_config = {}
+    device.robot_config['wake_button_enabled'] = True
+    device.save(update_fields=['schedule', 'robot_config'])
+    get_instance().handle_config_updated(device)
+    sent = get_instance().send_wakeup_to_bot(device.device_id)
+    message = f'Launching {module_id}' + (f' - {content_id}' if content_id else '')
+    message += ' now.' if sent else ' on the next wake; Moxie is currently offline.'
+    return redirect('hive:dashboard_alert', alert_message=message)
 
 # MOXIE - Edit Moxie Face Customizations
 class MoxieFaceView(generic.DetailView):
