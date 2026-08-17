@@ -5,18 +5,20 @@ FROM python:3.10-slim
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the current directory contents into the container at /app
-COPY . /app
-
 # PIP for installing python dep
 RUN apt-get update && apt-get install -y \
     python3-pip \
     python3-dev \
     libsndfile1
 
-# Install Python dependencies
+# Install Python dependencies before copying application source so ordinary
+# code changes can reuse this expensive layer.
+COPY requirements.txt /app/requirements.txt
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
+
+# Copy application source after dependencies are cached.
+COPY . /app
 
 # Create a volume for persistent data
 VOLUME /app/site/work

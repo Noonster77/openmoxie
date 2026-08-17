@@ -9,6 +9,8 @@ import re
 import logging
 import base64
 import ssl
+import threading
+from datetime import datetime, timezone
 from .ai_factory import set_openai_key
 from .robot_credentials import RobotCredentials
 from .robot_data import RobotData
@@ -65,29 +67,111 @@ class MoxieServer:
         self._cert_required = cert_required
         self._mqtt_client_id = _BASIC_FORMAT.format(self._mqtt_project_id, self._robot.device_id)
         logger.info(f"Creating client with id: {self._mqtt_client_id}")
-        self._client = mqtt.Client(client_id=self._mqtt_client_id, transport="tcp")
+        # Pin the legacy callback shape explicitly when using paho-mqtt 2.x.  Without
+        # this, a future callback API default can add parameters to on_connect and
+        # silently stop all subscriptions from being installed.
+        if hasattr(mqtt, "CallbackAPIVersion"):
+            self._client = mqtt.Client(
+                mqtt.CallbackAPIVersion.VERSION1,
+                client_id=self._mqtt_client_id,
+                transport="tcp",
+            )
+        else:
+            self._client = mqtt.Client(client_id=self._mqtt_client_id, transport="tcp")
         if self._cert_required:
             self._client.tls_set()
         else:
             self._client.tls_set(cert_reqs=ssl.CERT_NONE)
         self._client.on_connect = self.on_connect
+        self._client.on_disconnect = self.on_disconnect
+        self._client.on_connect_fail = self.on_connect_fail
         self._client.on_message = self.on_message
         self._topic_handlers = None
         self._connect_handlers = []
         self._remote_chat = RemoteChat(self)
         self._zmq_handlers = {}
         self._client_metrics = {}
-        self._connect_pattern = r"connected from (.*) as (d_[a-f0-9-]+)"
-        self._disconnect_pattern = r"Client (d_[a-f0-9-]+) (closed its connection|disconnected)"
+        self._connect_pattern = re.compile(r"connected from (.*?) as (d_[a-z0-9_-]+)", re.IGNORECASE)
+        self._disconnect_pattern = re.compile(
+            r"Client (d_[a-z0-9_-]+) (?:closed its connection|disconnected|has exceeded timeout)",
+            re.IGNORECASE,
+        )
         self._worker_queue = concurrent.futures.ThreadPoolExecutor(max_workers=5)
+        self._device_init_lock = threading.Lock()
+        self._device_init_futures = {}
+        self._status_lock = threading.Lock()
+        self._status = {
+            "broker_connected": False,
+            "started_at": self._timestamp(),
+            "last_broker_connect": None,
+            "last_broker_disconnect": None,
+            "last_connect_error": None,
+            "last_message": None,
+            "last_message_topic": None,
+            "last_device_activity": None,
+            "last_device_id": None,
+            "last_processing_error": None,
+            "last_processing_error_at": None,
+            "last_wake_command": None,
+            "last_wake_device": None,
+            "publish_failures": 0,
+        }
         self.update_from_database()
+
+    @staticmethod
+    def _timestamp():
+        return datetime.now(timezone.utc).isoformat()
+
+    def _update_status(self, **values):
+        with self._status_lock:
+            self._status.update(values)
+
+    def service_status(self):
+        """Return a JSON-safe diagnostic snapshot without credentials or payloads."""
+        with self._status_lock:
+            result = dict(self._status)
+        result.update({
+            "mqtt_host": self._mqtt_endpoint,
+            "mqtt_port": self._port,
+            "tls_verify": self._cert_required,
+            "connected_devices": self._robot_data.connected_list(),
+            "devices": self._robot_data.connected_details(),
+        })
+        return result
+
+    def _submit_worker(self, function, *args):
+        """Submit background work and surface exceptions that Futures otherwise hide."""
+        future = self._worker_queue.submit(function, *args)
+        task_name = getattr(function, "__name__", str(function))
+
+        def report_failure(completed):
+            if completed.cancelled():
+                return
+            exception = completed.exception()
+            if exception:
+                logger.error(
+                    "Background MQTT task %s failed",
+                    task_name,
+                    exc_info=(type(exception), exception, exception.__traceback__),
+                )
+                self._update_status(
+                    last_processing_error=f"{task_name}: {exception}",
+                    last_processing_error_at=self._timestamp(),
+                )
+
+        future.add_done_callback(report_failure)
+        return future
 
     # Connect to the broker - the jwt stuff left in place, but isn't required
     def connect(self, start = False):
         jwt_token = self._robot.create_jwt(self._mqtt_project_id)
         self._client.username_pw_set(username='unknown', password=jwt_token)
-        logger.info(f"connecting to: {self._mqtt_endpoint}")
-        self._client.connect(self._mqtt_endpoint, self._port, 60)
+        logger.info(f"Connecting to MQTT broker at {self._mqtt_endpoint}:{self._port}")
+        # connect_async lets paho's network loop retry if the broker starts after
+        # Django (or temporarily disappears).  The previous synchronous attempt
+        # killed the supervisor thread permanently on the first failure.
+        self._client.reconnect_delay_set(min_delay=1, max_delay=30)
+        self._client.connect_async(self._mqtt_endpoint, self._port, 60)
         if start:
             self.start()
 
@@ -115,7 +199,18 @@ class MoxieServer:
 
     # Callback when we connect to the mqtt broker, subscribe to everything we care about
     def on_connect(self, client, userdata, flags, rc):
-        logger.info(f"Connected with result code {rc}")
+        rc_value = int(rc)
+        if rc_value != 0:
+            message = mqtt.connack_string(rc_value)
+            logger.error(f"MQTT connection rejected ({rc_value}): {message}")
+            self._update_status(broker_connected=False, last_connect_error=message)
+            return
+        logger.info(f"Connected to MQTT broker at {self._mqtt_endpoint}:{self._port}")
+        self._update_status(
+            broker_connected=True,
+            last_broker_connect=self._timestamp(),
+            last_connect_error=None,
+        )
         # The only two supported in IOT - commands for a wildcard of commands, config for our robot configuration
         client.subscribe('/devices/+/events/#')
         client.subscribe('/devices/+/state')
@@ -125,46 +220,83 @@ class MoxieServer:
         for ch in self._connect_handlers:
             ch(self, rc) 
 
+    def on_connect_fail(self, client, userdata):
+        message = f"Unable to reach {self._mqtt_endpoint}:{self._port}; retrying"
+        logger.warning(message)
+        self._update_status(broker_connected=False, last_connect_error=message)
+
+    def on_disconnect(self, client, userdata, rc):
+        rc_value = int(rc)
+        message = None if rc_value == 0 else f"Unexpected disconnect (code {rc_value}); retrying"
+        if message:
+            logger.warning(message)
+        else:
+            logger.info("Disconnected from MQTT broker")
+        self._update_status(
+            broker_connected=False,
+            last_broker_disconnect=self._timestamp(),
+            last_connect_error=message,
+        )
+
     # Entry point for ALL incoming messages, extract params about source and route
     def on_message(self, client, userdata, msg):
         try:
+            self._update_status(last_message=self._timestamp(), last_message_topic=msg.topic)
             dec = msg.topic.split('/')
-            fromdevice = dec[2]
-            basetype = dec[3]
-            if basetype == "events":
-                self.on_device_event(fromdevice, dec[4], msg)
-            elif basetype == "state":
-                self.on_device_state(fromdevice, msg)
-            elif fromdevice == "clients":
-                self.on_client_metrics(basetype, msg)
-            elif fromdevice == "log":
-                self.on_sys_log_message(basetype, msg)
+            if len(dec) >= 4 and dec[0] == "" and dec[1] == "devices":
+                fromdevice = dec[2]
+                basetype = dec[3]
+                self._update_status(
+                    last_device_activity=self._timestamp(),
+                    last_device_id=fromdevice,
+                )
+                if basetype == "events" and len(dec) >= 5:
+                    self.on_device_event(fromdevice, dec[4], msg)
+                elif basetype == "state":
+                    self.on_device_state(fromdevice, msg)
+                else:
+                    logger.debug(f"Rx unknown device topic: {msg.topic}")
+            elif len(dec) >= 4 and dec[:3] == ["$SYS", "broker", "clients"]:
+                self.on_client_metrics(dec[3], msg)
+            elif len(dec) >= 4 and dec[:3] == ["$SYS", "broker", "log"]:
+                self.on_sys_log_message(dec[3], msg)
             else:
-                logger.debug(f"Rx UNK topic: {dec}")
-        except Exception as e:
-            logging.exception("Error handling mqtt messsage:")
+                logger.debug(f"Rx unknown topic: {msg.topic}")
+        except Exception:
+            logger.exception("Error handling MQTT message on topic %s", msg.topic)
     
 
     # Handle messages FROM mosquitto syslog topic, looking for connect/disconnects
     def on_sys_log_message(self, basetype, msg):
         if basetype == "N": # Notifications
             line = msg.payload.decode('utf-8')
-            match = re.search(self._connect_pattern, line)
-            match2 = None if match else re.search(self._disconnect_pattern, line)
+            match = self._connect_pattern.search(line)
+            match2 = None if match else self._disconnect_pattern.search(line)
             if match:
-                if self._robot_data.connect_init_needed(match.group(2)):
-                    self._worker_queue.submit(self.on_device_connect, match.group(2), True, match.group(1))
+                self.check_device_connect(match.group(2), match.group(1))
             elif match2:
-                self._worker_queue.submit(self.on_device_connect, match2.group(1), False)
+                self._submit_worker(self.on_device_connect, match2.group(1), False)
 
     # Handles metrics from mosquitto
     def on_client_metrics(self, basetype, msg):
-        self._client_metrics[basetype] = int(msg.payload.decode('utf-8'))
+        try:
+            self._client_metrics[basetype] = int(msg.payload.decode('utf-8'))
+        except ValueError:
+            logger.debug("Ignoring non-integer broker metric %s", msg.topic)
 
     # ALL EVENTS FROM-DEVICE ARRIVE HERE
     def on_device_event(self, device_id, eventname, msg):
         # Check the connection in case we missed this device connecting
-        self.check_device_connect(device_id, "Event")
+        initializing = self.check_device_connect(device_id, "Event")
+        if initializing:
+            # MQTT callbacks and the DB initializer use different worker threads.
+            # Defer this message until initialization completes to avoid serving
+            # defaults or querying a MoxieDevice row that does not exist yet.
+            initializing.add_done_callback(
+                lambda future: self.on_device_event(device_id, eventname, msg)
+                if future.result() else None
+            )
+            return
         if eventname == "remote-chat" or eventname == "remote-chat-staging":
             rcr = json.loads(msg.payload)
             if rcr.get('backend') == "data" and rcr.get('query',{}).get('query') == "modules":
@@ -185,12 +317,12 @@ class MoxieServer:
                     # SCHEDULE REQUEST - Robot asking what schedule to follow this session
                     logger.debug("Rx Schedule request.")
                     req_id = csa.get('request_id')
-                    self._worker_queue.submit(self.provide_schedule, req_id, device_id)
+                    self._submit_worker(self.provide_schedule, req_id, device_id)
                 elif csa.get("query") == "mentor_behaviors":
                     # MENTOR BEHAVIOR REQUEST - Robot asking what user has done before
                     logger.debug("Rx MBH request.")
                     req_id = csa.get('request_id')
-                    self._worker_queue.submit(self.provide_mentor_behaviors, req_id, device_id)
+                    self._submit_worker(self.provide_mentor_behaviors, req_id, device_id)
                 elif csa.get("query") == "license":
                     # ROBOT IS ASKING FOR ANY LICENSES IT CAN USE (e.g. google speech)
                     req_id = csa.get('request_id')
@@ -204,7 +336,7 @@ class MoxieServer:
                                                         })
             elif 'mentor_behavior' in csa:
                 # MENTOR BEHAVIOR REPORT - Robot informing what user has done
-                self._worker_queue.submit(self.ingest_mentor_behavior, device_id, csa['mentor_behavior'])
+                self._submit_worker(self.ingest_mentor_behavior, device_id, csa['mentor_behavior'])
             elif csa.get("subtopic") == "telehealth":
                 # ROBOT TELEHEALTH INTERFACE
                 logger.info(f'Rx TELEHEALTH: {csa.get("message")}')
@@ -254,31 +386,62 @@ class MoxieServer:
     def on_device_connect(self, device_id, connected, ip_addr=None):
         if connected:
             logger.info(f'Moxie CONNECTED {device_id} from {ip_addr}')
-            self._robot_data.db_connect(device_id)
-            # Sleep to avoid sending sub/config before client is ready
-            time.sleep(1.0)
-            self.send_config_to_bot_json(device_id, self._robot_data.get_config(device_id))
-            # subscripe to ZMQ STT
-            sub = ProtoSubscribe()
-            sub.protos.append('embodied.perception.audio.zmqSTTRequest')
-            sub.timestamp = now_ms()
-            logger.debug(f'Subscribed to ZMQ STT')
-            self.send_zmq_to_bot(device_id, sub)
+            try:
+                self._robot_data.db_connect(device_id)
+                # Sleep to avoid sending sub/config before client is ready
+                time.sleep(1.0)
+                self.send_config_to_bot_json(device_id, self._robot_data.get_config(device_id))
+                # subscribe to ZMQ STT
+                sub = ProtoSubscribe()
+                sub.protos.append('embodied.perception.audio.zmqSTTRequest')
+                sub.timestamp = now_ms()
+                logger.debug('Subscribed to ZMQ STT')
+                self.send_zmq_to_bot(device_id, sub)
+                return True
+            except Exception:
+                # Do not leave an empty cache entry marking a failed initialization
+                # as online forever. A later state/event can now retry it.
+                self._robot_data.abort_connect(device_id)
+                logger.exception("Failed to initialize connected Moxie %s", device_id)
+                return False
         else:
             self._robot_data.db_release(device_id)
             logger.info(f'Moxie DISCONNECTED {device_id}')
+            return True
 
     # Fallback, we missed the connect message but robot is connected
     def check_device_connect(self, device_id, info="Missing"):
-        if self._robot_data.connect_init_needed(device_id):
-            logger.info(f"Unconnected robot {device_id} location {info}.  Connecting now.")
-            self._worker_queue.submit(self.on_device_connect, device_id, True, info)
+        new_future = None
+        with self._device_init_lock:
+            current = self._device_init_futures.get(device_id)
+            if current and not current.done():
+                return current
+            if self._robot_data.connect_init_needed(device_id):
+                logger.info(f"Unconnected robot {device_id} location {info}. Connecting now.")
+                new_future = self._submit_worker(self.on_device_connect, device_id, True, info)
+                self._device_init_futures[device_id] = new_future
+        # Register outside the lock: add_done_callback executes immediately when a
+        # fast failure already completed, and the callback takes the same lock.
+        if new_future:
+            new_future.add_done_callback(lambda completed: self._forget_init_future(device_id, completed))
+            return new_future
+        return None
+
+    def _forget_init_future(self, device_id, completed):
+        with self._device_init_lock:
+            if self._device_init_futures.get(device_id) is completed:
+                del self._device_init_futures[device_id]
 
     # Moxie reporting its own state information
     def on_device_state(self, device_id, msg):
         logger.debug(f"Rx STATE topic for device {device_id}")
-        self.check_device_connect(device_id, "State")
-        self._worker_queue.submit(self.ingest_robot_state, device_id, json.loads(msg.payload))
+        initializing = self.check_device_connect(device_id, "State")
+        if initializing:
+            initializing.add_done_callback(
+                lambda future: self.on_device_state(device_id, msg) if future.result() else None
+            )
+            return
+        self._submit_worker(self.ingest_robot_state, device_id, json.loads(msg.payload))
 
     # Callback when a moxie config has changed and may need to be provided
     def handle_config_updated(self, device):
@@ -292,22 +455,36 @@ class MoxieServer:
     # For Robots using wake_button_enabled, wake them from screen off
     def send_wakeup_to_bot(self, device_id):
         if self._robot_data.device_online(device_id):
-            self.send_command_to_bot_json(device_id, 'wakeup', {'command': 'wakeup'})
-            return True
+            result = self.send_command_to_bot_json(device_id, 'wakeup', {'command': 'wakeup'})
+            if result.rc == mqtt.MQTT_ERR_SUCCESS:
+                self._update_status(
+                    last_wake_command=self._timestamp(),
+                    last_wake_device=device_id,
+                )
+                logger.info("Wake command queued for %s", device_id)
+                return True
         return False
 
     # Send Moxie its configuration data
     def send_config_to_bot_json(self, device_id, payload: dict):
-        self._client.publish(f"/devices/{device_id}/config", payload=json.dumps(payload))
+        return self._publish(f"/devices/{device_id}/config", json.dumps(payload))
 
     # Send a Command (JSON) to Moxie
     def send_command_to_bot_json(self, device_id, command, payload: dict):
-        self._client.publish(f"/devices/{device_id}/commands/{command}", payload=json.dumps(payload))
+        return self._publish(f"/devices/{device_id}/commands/{command}", json.dumps(payload))
 
     # Send a binary ZMQ message to Moxie
     def send_zmq_to_bot(self, device_id, msgobject):
         payload = (msgobject.DESCRIPTOR.full_name + ":").encode('utf-8') + msgobject.SerializeToString()
-        self._client.publish(f"/devices/{device_id}/commands/zmq", payload=payload)
+        return self._publish(f"/devices/{device_id}/commands/zmq", payload)
+
+    def _publish(self, topic, payload):
+        result = self._client.publish(topic, payload=payload)
+        if result.rc != mqtt.MQTT_ERR_SUCCESS:
+            logger.warning("MQTT publish failed for %s: %s", topic, mqtt.error_string(result.rc))
+            with self._status_lock:
+                self._status["publish_failures"] += 1
+        return result
 
     # Send Telehealth message to Moxie
     def send_telehealth(self, device_id, msg):

@@ -12,6 +12,7 @@ from django.conf import settings
 import qrcode
 from PIL import Image
 from io import BytesIO
+from copy import deepcopy
 
 from .models import GlobalResponse, SinglePromptChat, MoxieDevice, MoxieSchedule, HiveConfiguration, MentorBehavior
 from .content.data import DM_MISSION_CONTENT_IDS, get_moxie_customization_groups
@@ -94,8 +95,26 @@ class DashboardView(generic.TemplateView):
         context['recent_devices'] = MoxieDevice.objects.all()
         context['conversations'] = SinglePromptChat.objects.all()
         context['schedules'] = MoxieSchedule.objects.all()
-        context['live'] = get_instance().robot_data().connected_list()
+        service = get_instance()
+        context['live'] = service.robot_data().connected_list() if service else []
+        context['service_status'] = service.service_status() if service else {
+            'broker_connected': False,
+            'last_connect_error': 'MQTT service has not started.',
+        }
+        hive_config = HiveConfiguration.objects.filter(name='default').first()
+        context['openai_configured'] = bool(hive_config and (hive_config.openai_api_key or '').strip())
         return context
+
+# STATUS - Lightweight, credential-free diagnostics used by the dashboard.
+def connection_status(request):
+    service = get_instance()
+    if not service:
+        return JsonResponse({
+            'broker_connected': False,
+            'last_connect_error': 'MQTT service has not started.',
+            'connected_devices': [],
+        }, status=503)
+    return JsonResponse(service.service_status())
 
 # INTERACT - Chat with a remote conversation
 class InteractionView(generic.DetailView):
@@ -318,15 +337,53 @@ def mission_edit(request, pk):
         logger.warning("Moxie update for unfound pk {pk}")
         return redirect('hive:dashboard_alert', alert_message='No such Moxie')
 
-# WAKE UP A MOXIE THAT IS USING WAKE BUTTON
+# Enable wake-button support and wake a connected Moxie.
+@require_http_methods(["POST"])
 def moxie_wake(request, pk):
     try:
         device = MoxieDevice.objects.get(pk=pk)
+        if device.robot_config is None:
+            device.robot_config = {}
+        device.robot_config['wake_button_enabled'] = True
+        device.save(update_fields=['robot_config'])
+        get_instance().handle_config_updated(device)
         logger.info(f'Waking up {device}')
-        alert_msg = "Wake message sent!" if get_instance().send_wakeup_to_bot(device.device_id) else 'Moxie was offline.'
+        alert_msg = "Wake message sent. Watch the live Mode value for confirmation." if get_instance().send_wakeup_to_bot(device.device_id) else 'Moxie was offline.'
         return redirect('hive:dashboard_alert', alert_message=alert_msg)
     except MoxieDevice.DoesNotExist as e:
         logger.warning("Moxie wake for unfound pk {pk}")
+        return redirect('hive:dashboard_alert', alert_message='No such Moxie')
+
+# Wake directly into the OpenMoxie chat module. The derived schedule can be
+# changed back from the normal Moxie edit screen.
+@require_http_methods(["POST"])
+def moxie_wake_chat(request, pk):
+    try:
+        device = MoxieDevice.objects.get(pk=pk)
+        if not device.schedule:
+            return redirect('hive:dashboard_alert', alert_message='Moxie has no schedule to use for chat.')
+
+        schedule_data = deepcopy(device.schedule.schedule)
+        schedule_data['wake_module'] = {
+            'module_id': 'OPENMOXIE_CHAT',
+            'content_id': 'default',
+        }
+        schedule_name = f'Wake to Chat - {device.device_id}'
+        chat_schedule, _ = MoxieSchedule.objects.update_or_create(
+            name=schedule_name,
+            defaults={'schedule': schedule_data, 'source_version': 1},
+        )
+        device.schedule = chat_schedule
+        if device.robot_config is None:
+            device.robot_config = {}
+        device.robot_config['wake_button_enabled'] = True
+        device.save(update_fields=['schedule', 'robot_config'])
+        get_instance().handle_config_updated(device)
+        logger.info('Waking %s directly into OpenMoxie chat', device)
+        sent = get_instance().send_wakeup_to_bot(device.device_id)
+        message = 'Wake & Chat sent. Moxie should open with a chat prompt.' if sent else 'Moxie was offline.'
+        return redirect('hive:dashboard_alert', alert_message=message)
+    except MoxieDevice.DoesNotExist:
         return redirect('hive:dashboard_alert', alert_message='No such Moxie')
 
 # MOXIE - Export Moxie Content Data - Selection View

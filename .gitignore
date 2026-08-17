@@ -7,3 +7,6 @@
 # Only preserve folder structure
 local/work/**/*
 !local/work/.gitkeep
+
+# Direct (non-Docker) runs keep the same generated database/log data here.
+site/work/**/*

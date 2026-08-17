@@ -17,6 +17,9 @@ from django.conf import settings
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_STORE_DIR = BASE_DIR / 'work'
+# Logging is configured while Django imports settings, before migrations or the
+# application get a chance to create the persistent work directory.
+DATA_STORE_DIR.mkdir(parents=True, exist_ok=True)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/

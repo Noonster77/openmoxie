@@ -97,6 +97,11 @@ class RobotData:
             # set an empty record, so we don't try again
             self._robot_map[robot_id] = {}
         return needed
+
+    def abort_connect(self, robot_id):
+        """Clear a failed connection placeholder so later traffic can retry setup."""
+        if not self._robot_map.get(robot_id):
+            self._robot_map.pop(robot_id, None)
     
     # Check if a device is online
     def device_online(self, robot_id):
@@ -105,6 +110,17 @@ class RobotData:
     # Get a list of online robots
     def connected_list(self):
         return list(self._robot_map.keys())
+
+    def connected_details(self):
+        """Return safe, live state details for connected-device diagnostics."""
+        details = {}
+        for robot_id, record in self._robot_map.items():
+            state = record.get("state", {}) if record else {}
+            details[robot_id] = {
+                "mode": state.get("mode", "connecting"),
+                "last_state": record.get("state_received_at") if record else None,
+            }
+        return details
     
     # Build a configuration record for a robot
     def build_config(self, device, hive_cfg):
@@ -123,7 +139,7 @@ class RobotData:
         device.last_connect = timezone.now()
         if created:
             logger.info(f'Created new model for this device {robot_id}')
-            schedule = MoxieSchedule.objects.get(name='default')
+            schedule = MoxieSchedule.objects.filter(name='default').first()
             if schedule:
                 logger.info(f'Setting schedule to {schedule}')
                 device.schedule = schedule
@@ -197,6 +213,7 @@ class RobotData:
         if rec:
             # only add to a non-empty (initialized) record
             rec["state"] = state
+            rec["state_received_at"] = timezone.now().isoformat()
 
     def put_puppet_state(self, robot_id, state):
         rec = self._robot_map.get(robot_id)
@@ -211,7 +228,7 @@ class RobotData:
     # Update the device record with the state data
     def update_state_atomic(self, robot_id, state):
         device = MoxieDevice.objects.get(device_id=robot_id)
-        if "battery_level" not in state and "battery_level" in device.state:
+        if "battery_level" not in state and device.state and "battery_level" in device.state:
             # sometimes state is missing the battery key, use the previous one if it isnt included
             state["battery_level"] = device.state["battery_level"]
         device.state = state
