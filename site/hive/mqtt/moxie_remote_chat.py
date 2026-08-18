@@ -15,10 +15,12 @@ from ..models import SinglePromptChat
 from ..automarkup import process as automarkup_process
 from ..automarkup import initialize_rules as automarkup_initialize_rules
 import logging
+import threading
 from datetime import datetime
 from .global_responses import GlobalResponses
 from .conversations import ChatSession, SinglePromptDBChatSession, TriviaChatSession
 from .volley import Volley
+from .conversation_log import record_conversation
 
 # Turn on to enable global commands in the cloud
 _ENABLE_GLOBAL_COMMANDS = True
@@ -44,6 +46,33 @@ class RemoteChat:
         self._worker_queue = concurrent.futures.ThreadPoolExecutor(max_workers=_MAX_WORKER_THREADS)
         self._automarkup_rules = automarkup_initialize_rules()
         self._global_responses = GlobalResponses()
+        self._control_lock = threading.Lock()
+        self._pending_controls = {}
+
+    def queue_control(self, device_id, action, module_id=None, content_id=None, text='Okay.'):
+        """Hold a UI control until it can answer a real robot router request."""
+        with self._control_lock:
+            self._pending_controls[device_id] = {
+                'action': action, 'module_id': module_id, 'content_id': content_id, 'text': text,
+            }
+        logger.info('Queued %s control for %s', action, device_id)
+
+    def _take_control(self, device_id):
+        with self._control_lock:
+            return self._pending_controls.pop(device_id, None)
+
+    def _apply_control(self, device_id, volley):
+        control = self._take_control(device_id)
+        if not control:
+            return False
+        volley.create_response(output_type='GLOBAL_COMMAND')
+        volley.set_output(control['text'], None, output_type='GLOBAL_COMMAND')
+        volley.add_response_action(
+            control['action'], output_type='GLOBAL_COMMAND',
+            module_id=control.get('module_id'), content_id=control.get('content_id'),
+        )
+        logger.info('Applying queued %s control to robot request %s', control['action'], volley.request.get('event_id'))
+        return True
 
     def register_module(self, module_id, content_id, cname):
         self._modules[f'{module_id}/{content_id}'] = cname
@@ -135,6 +164,12 @@ class RemoteChat:
     # Get the next response to a chat
     def create_session_response(self, device_id, sess:ChatSession, volley: Volley):
         sess.handle_volley(volley)
+        request = volley.request
+        # A UI control may have arrived while local/remote inference was running.
+        # Replace that stale response so it cannot resume the activity after Stop/Sleep.
+        self._apply_control(device_id, volley)
+        record_conversation(device_id, 'user', request.get('speech', ''), request.get('module_id', ''), request.get('content_id', ''))
+        record_conversation(device_id, 'moxie', volley.response.get('output', {}).get('text', ''), request.get('module_id', ''), request.get('content_id', ''))
         self._server.robot_data().save_persistent_data(device_id)
         if 'markup' not in volley.response['output']:
             # if we don't have markup, create it
@@ -153,15 +188,18 @@ class RemoteChat:
             # Run automarkup on any text-only responses
             output['markup'] = self.make_markup(output['text'])
         self._server.send_command_to_bot_json(device_id, 'remote_chat', resp)
-        pass
+        self._server.robot_data().save_persistent_data(device_id)
+        record_conversation(device_id, 'moxie', output.get('text', ''))
 
     def log_notify(self, rcr):
         moxie_speech = rcr.get('speech')
         for el in rcr.get('extra_lines', []):
             if el.get('context_type') == 'input':
                 logger.info(f"-- USER: {el.get('text')}")    
+                record_conversation(rcr.get('_device_id', ''), 'user', el.get('text'), rcr.get('module_id', ''), rcr.get('content_id', ''))
         if moxie_speech:
             logger.info(f"-- MOXIE: {moxie_speech} [{rcr.get('module_id')}/{rcr.get('content_id')}]")
+            record_conversation(rcr.get('_device_id', ''), 'moxie', moxie_speech, rcr.get('module_id', ''), rcr.get('content_id', ''))
 
     # Entry point where all RemoteChatRequests arrive
     def handle_request(self, device_id, rcr, volley_data):
@@ -170,7 +208,14 @@ class RemoteChat:
         id = rcr.get('module_id', '') + '/' + rcr.get('content_id', '')
         cmd = rcr.get('command')
         if _LOG_NOTIFY_RCR and cmd == 'notify':
+            rcr['_device_id'] = device_id
             self.log_notify(rcr)
+
+        if cmd in ('prompt', 'continue', 'reprompt'):
+            control_volley = Volley(rcr, device_id=device_id, robot_data=volley_data)
+            if self._apply_control(device_id, control_volley):
+                self.global_response(device_id, lambda: control_volley.response)
+                return
 
         maker = self._modules.get(id)
         if maker:
@@ -203,7 +248,8 @@ class RemoteChat:
     def handled_global(self, device_id, volley):
         global_functor = self.check_global(volley)
         if global_functor:
-            logger.debug(f'Global response inside {id}')
+            logger.debug('Global voice command handled for %s', device_id)
+            record_conversation(device_id, 'user', volley.request.get('speech', ''), volley.request.get('module_id', ''), volley.request.get('content_id', ''))
             self._worker_queue.submit(self.global_response, device_id, global_functor)
             return True
         return False

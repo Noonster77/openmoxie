@@ -8,8 +8,9 @@ import re
 import traceback
 from django.template import Template, Context
 from .ai_factory import chat_completion
-from ..models import SinglePromptChat
+from ..models import MoxieDevice, SinglePromptChat, TriviaQuestion
 from .volley import Volley
+from .conversation_log import safety_redirect
 
 logger = logging.getLogger(__name__)
 
@@ -137,6 +138,17 @@ class SingleContextChatSession(ChatSession):
     def make_volley_context(self, volley:Volley):
         ctx = self._prompt_template.render(Context({'volley': volley, 'session': self}))
         ctx += "\n\nYour response will be spoken aloud by Moxie. Do not use emoji, markdown, lists, or stage directions. Finish every sentence."
+        ctx += "\nUse profile details sparingly. Do not repeatedly mention pets, relatives, hobbies, or the person's name. Vary topics naturally and follow what the person actually says."
+        current_speech = volley.request.get('speech', '').lower()
+        if not any(word in current_speech for word in ('dog', 'dogs', 'hazel', 'stella', 'pet', 'pets')):
+            ctx += "\nDo not mention dogs, pets, Hazel, or Stella in this response. The current speaker did not bring them up."
+        active_speaker = volley.persist_data.get('active_speaker')
+        if active_speaker:
+            ctx += f"\nThe person currently speaking identified themself as {active_speaker}."
+        if random.random() < 0.35:
+            ctx += "\nEnd this response with one short, friendly question related to the conversation."
+        else:
+            ctx += "\nDo not force a question into this response."
         if volley.conversation_profile:
             ctx += "\n\nCHILD PROFILE AND CONVERSATION RULES:\n" + volley.conversation_profile
         if volley.conversation_memory_enabled:
@@ -185,7 +197,11 @@ class SingleContextChatSession(ChatSession):
                 text,overflow = self.get_opener()
             else:
                 speech = "hm" if volley.request.get("command")=="reprompt" else volley.request["speech"]
-                text,overflow = self.next_response(speech, self.make_volley_context(volley))
+                redirect_text = safety_redirect(speech)
+                if redirect_text:
+                    text, overflow = redirect_text, False
+                else:
+                    text,overflow = self.next_response(speech, self.make_volley_context(volley))
                 self.remember_exchange(volley, speech, text)
             volley.set_output(text, None)
             if overflow:
@@ -295,49 +311,94 @@ class SinglePromptDBChatSession(SingleContextChatSession):
 
 
 class TriviaChatSession(ChatSession):
-    """Deterministic, API-free trivia with a score kept for the current game."""
-    QUESTIONS = [
-        ("What planet do we live on?", ("earth",)),
-        ("How many legs does a spider have?", ("eight", "8")),
-        ("What is frozen water called?", ("ice",)),
-        ("Which animal says moo?", ("cow",)),
-        ("How many days are in a week?", ("seven", "7")),
-        ("What is the largest ocean on Earth?", ("pacific",)),
-        ("What do caterpillars turn into?", ("butterfly", "butterflies")),
-        ("Which shape has three sides?", ("triangle",)),
-        ("What gas do people need to breathe?", ("oxygen",)),
-        ("What is ten plus five?", ("fifteen", "15")),
+    """Configurable, API-free trivia with category filters and spoken-friendly pacing."""
+    FALLBACK_QUESTIONS = [
+        {'category': 'Science', 'question': 'What planet do we live on?', 'answers': ['earth'], 'fun_fact': ''},
+        {'category': 'Animals', 'question': 'How many legs does a spider have?', 'answers': ['eight', '8'], 'fun_fact': 'Spiders use tiny hairs on their legs to sense vibrations.'},
+        {'category': 'Math', 'question': 'What is ten plus five?', 'answers': ['fifteen', '15'], 'fun_fact': ''},
+    ]
+    PATTER = [
+        'Tiny drumroll for the next one.',
+        'My imaginary quiz buzzer is ready.',
+        'Okay, brain gears: spin, spin, spin.',
+        'Next one coming in hot. Well, robot-temperature hot.',
+        'Excellent effort. The scoreboard is wearing a fancy hat.',
+        'Let us hop to another question. Boing.',
+        'Here comes a fresh mystery for your noodle.',
     ]
 
     def __init__(self):
         super().__init__(max_history=0)
         self.reset_game()
 
-    def reset_game(self):
+    def reset_game(self, device_id=None):
         self._local_data['trivia_index'] = 0
         self._local_data['trivia_score'] = 0
+        self._local_data['last_patter'] = ''
+        questions = []
+        count = 10
+        try:
+            device = MoxieDevice.objects.filter(device_id=device_id).first() if device_id else None
+            categories = device.trivia_categories if device else []
+            count = max(3, min(20, device.trivia_question_count if device else 10))
+            query = TriviaQuestion.objects.filter(enabled=True)
+            if categories:
+                query = query.filter(category__in=categories)
+            questions = [
+                {'category': row.category, 'question': row.question,
+                 'answers': [str(answer).lower() for answer in row.accepted_answers], 'fun_fact': row.fun_fact}
+                for row in query
+            ]
+        except Exception:
+            logger.exception('Could not load configured trivia; using built-in fallback')
+        if not questions:
+            questions = copy.deepcopy(self.FALLBACK_QUESTIONS)
+        random.shuffle(questions)
+        self._local_data['trivia_questions'] = questions[:min(count, len(questions))]
+
+    def _patter(self):
+        choices = [line for line in self.PATTER if line != self._local_data.get('last_patter')]
+        line = random.choice(choices)
+        self._local_data['last_patter'] = line
+        return line
+
+    def _ask(self, index):
+        item = self._local_data['trivia_questions'][index]
+        return f"Question {index + 1}, from {item['category']}. {item['question']}"
 
     def handle_volley(self, volley: Volley):
         volley.assign_local_data(self._local_data)
         if volley.request.get('command') == 'prompt':
-            self.reset_game()
-            text = "Let's play trivia! I'll keep score. " + self.QUESTIONS[0][0]
+            self.reset_game(volley.device_id)
+            total = len(self._local_data['trivia_questions'])
+            text = f"Let's play {total} questions of mixed-up trivia. I'll keep score. {self._ask(0)}"
+        elif volley.request.get('command') == 'reprompt':
+            text = "No problem. Here it is again. " + self._ask(self._local_data['trivia_index'])
         else:
             index = self._local_data['trivia_index']
+            questions = self._local_data['trivia_questions']
+            if index >= len(questions):
+                self.reset_game(volley.device_id)
+                index = 0
+                questions = self._local_data['trivia_questions']
             speech = volley.request.get('speech', '').lower()
-            correct = any(re.search(rf'\b{re.escape(answer)}\b', speech) for answer in self.QUESTIONS[index][1])
+            item = questions[index]
+            correct = any(re.search(rf'\b{re.escape(answer)}\b', speech) for answer in item['answers'])
             if correct:
                 self._local_data['trivia_score'] += 1
-                result = "Correct!"
+                result = random.choice(['Correct!', 'You got it!', 'That is exactly right!', 'Yes! Nice thinking!'])
             else:
-                result = f"Good try! The answer is {self.QUESTIONS[index][1][0]}."
+                result = f"Good try. The answer is {item['answers'][0]}."
+            if item.get('fun_fact'):
+                result += ' ' + item['fun_fact']
             index += 1
             self._local_data['trivia_index'] = index
-            if index >= len(self.QUESTIONS):
+            if index >= len(questions):
                 score = self._local_data['trivia_score']
-                text = f"{result} You scored {score} out of {len(self.QUESTIONS)}. Great game!"
+                text = f"{result} Final score: {score} out of {len(questions)}. Great game! My quiz circuits are impressed."
                 volley.set_output(text, None)
                 volley.add_launch_or_exit()
                 return
-            text = f"{result} Your score is {self._local_data['trivia_score']} out of {index}. Next question: {self.QUESTIONS[index][0]}"
+            score_line = f" Your score is {self._local_data['trivia_score']} out of {index}." if index % 3 == 0 else ''
+            text = f"{result}{score_line} {self._patter()} {self._ask(index)}"
         volley.set_output(text, None)

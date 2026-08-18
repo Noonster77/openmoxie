@@ -10,6 +10,7 @@ import logging
 import base64
 import ssl
 import threading
+import uuid
 from datetime import datetime, timezone
 from .ai_factory import set_openai_key, configure_ai
 from .robot_credentials import RobotCredentials
@@ -464,6 +465,31 @@ class MoxieServer:
                 logger.info("Wake command queued for %s", device_id)
                 return True
         return False
+
+    def send_remote_action_to_bot(self, device_id, action, module_id=None, content_id=None, text='Okay.'):
+        """Best-effort immediate router action; queued schedule remains the fallback."""
+        if not self._robot_data.device_online(device_id):
+            return False
+        response_action = {'action': action, 'output_type': 'GLOBAL_COMMAND'}
+        if module_id:
+            response_action['module_id'] = module_id
+        if content_id:
+            response_action['content_id'] = content_id
+        payload = {
+            'command': 'remote_chat', 'result': 0, 'backend': 'router',
+            'event_id': str(uuid.uuid4()), 'output': {'text': text},
+            'response_actions': [response_action], 'response_action': response_action,
+            'fallback': False,
+        }
+        result = self.send_command_to_bot_json(device_id, 'remote_chat', payload)
+        return result.rc == mqtt.MQTT_ERR_SUCCESS
+
+    def queue_remote_action_to_bot(self, device_id, action, module_id=None, content_id=None, text='Okay.'):
+        """Queue an action for the next genuine router request from Moxie."""
+        if not self._robot_data.device_online(device_id):
+            return False
+        self._remote_chat.queue_control(device_id, action, module_id, content_id, text)
+        return True
 
     # Send Moxie its configuration data
     def send_config_to_bot_json(self, device_id, payload: dict):

@@ -9,13 +9,14 @@ from django.http import Http404, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse,HttpResponseRedirect
 from django.conf import settings
+from django.utils import timezone
 import qrcode
 from PIL import Image
 from io import BytesIO
 from copy import deepcopy
 
-from .models import GlobalResponse, SinglePromptChat, MoxieDevice, MoxieSchedule, HiveConfiguration, MentorBehavior
-from .content.data import DM_MISSION_CONTENT_IDS, RECOMMENDABLE_MODULES, get_moxie_customization_groups
+from .models import ConversationEvent, GlobalResponse, SinglePromptChat, MoxieDevice, MoxieSchedule, HiveConfiguration, MentorBehavior, TriviaQuestion
+from .content.data import DM_MISSION_CONTENT_IDS, MISSION_DESCRIPTIONS, RECOMMENDABLE_MODULES, get_moxie_customization_groups
 from .data_import import update_import_status, import_content
 from .mqtt.moxie_server import get_instance
 from .mqtt.robot_data import DEFAULT_ROBOT_CONFIG, DEFAULT_ROBOT_SETTINGS
@@ -24,6 +25,9 @@ from .mqtt.ai_factory import create_chat_client, get_chat_model
 import json
 import uuid
 import logging
+import re
+from collections import deque
+from datetime import date
 
 logger = logging.getLogger(__name__)
 
@@ -114,6 +118,8 @@ class DashboardView(generic.TemplateView):
         hive_config = HiveConfiguration.objects.filter(name='default').first()
         context['openai_configured'] = bool(hive_config and (hive_config.openai_api_key or '').strip())
         context['ai_config'] = hive_config
+        context['recent_conversation'] = ConversationEvent.objects.select_related('device').order_by('-created_at')[:20]
+        context['safety_alerts_today'] = ConversationEvent.objects.filter(safety_flagged=True, created_at__date=date.today()).count()
         return context
 
 # STATUS - Lightweight, credential-free diagnostics used by the dashboard.
@@ -126,6 +132,80 @@ def connection_status(request):
             'connected_devices': [],
         }, status=503)
     return JsonResponse(service.service_status())
+
+
+def _safe_debug_tail(limit=80):
+    path = settings.DATA_STORE_DIR / 'debug.log'
+    if not path.exists():
+        return []
+    with path.open('r', encoding='utf-8', errors='replace') as stream:
+        lines = list(deque(stream, maxlen=limit))
+    redacted = []
+    for line in lines:
+        line = re.sub(r'sk-[A-Za-z0-9_-]{12,}', 'sk-[REDACTED]', line.rstrip())
+        line = re.sub(r'("?(?:password|api[_-]?key)"?\s*[:=]\s*)\S+', r'\1[REDACTED]', line, flags=re.I)
+        redacted.append(line)
+    return redacted
+
+
+def live_activity(request, pk):
+    device = get_object_or_404(MoxieDevice, pk=pk)
+    events = ConversationEvent.objects.filter(device=device).order_by('-created_at')[:60]
+    persist = get_instance().robot_data().get_persist_for_device(device)
+    service_status = get_instance().service_status()
+    detail = service_status.get('devices', {}).get(device.device_id, {})
+    return JsonResponse({
+        'online': device.device_id in service_status.get('connected_devices', []),
+        'mode': detail.get('mode', 'offline'),
+        'active_speaker': persist.get('active_speaker', 'Not identified'),
+        'events': [{
+            'id': event.pk, 'time': event.created_at.isoformat(), 'role': event.role,
+            'text': event.text, 'module_id': event.module_id, 'content_id': event.content_id,
+            'safety_flagged': event.safety_flagged, 'safety_categories': event.safety_categories,
+        } for event in reversed(events)],
+        'debug': _safe_debug_tail(),
+    })
+
+
+class LiveMonitorView(generic.DetailView):
+    template_name = 'hive/monitor.html'
+    model = MoxieDevice
+
+
+class TranscriptView(generic.DetailView):
+    template_name = 'hive/transcripts.html'
+    model = MoxieDevice
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        selected = self.request.GET.get('date') or timezone.localdate().isoformat()
+        try:
+            selected_date = date.fromisoformat(selected)
+        except ValueError:
+            selected_date = timezone.localdate()
+        context['selected_date'] = selected_date
+        context['events'] = ConversationEvent.objects.filter(device=self.object, created_at__date=selected_date)
+        context['days'] = list(ConversationEvent.objects.filter(device=self.object).dates('created_at', 'day', order='DESC'))
+        return context
+
+
+def transcript_download(request, pk, day):
+    device = get_object_or_404(MoxieDevice, pk=pk)
+    try:
+        selected_date = date.fromisoformat(day)
+    except ValueError:
+        raise Http404('Invalid transcript date')
+    events = ConversationEvent.objects.filter(device=device, created_at__date=selected_date)
+    lines = [f'OpenMoxie conversation transcript - {device} - {selected_date}', '']
+    for event in events:
+        local_time = timezone.localtime(event.created_at).strftime('%H:%M:%S')
+        line = f'[{local_time}] {event.role.upper()}: {event.text}'
+        if event.safety_flagged:
+            line += f" [PARENT REVIEW: {', '.join(event.safety_categories)}]"
+        lines.append(line)
+    response = HttpResponse('\n'.join(lines) + '\n', content_type='text/plain; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="moxie-{selected_date}.txt"'
+    return response
 
 
 @require_http_methods(["POST"])
@@ -228,6 +308,7 @@ def moxie_edit(request, pk):
         device.name = request.POST["moxie_name"]
         device.conversation_profile = request.POST.get('conversation_profile', '').strip()
         device.conversation_memory_enabled = request.POST.get('conversation_memory_enabled') == 'on'
+        device.speaker_names = [name.strip() for name in request.POST.get('speaker_names', '').splitlines() if name.strip()]
         device.schedule = MoxieSchedule.objects.get(pk=request.POST["schedule"])
         # changes to json field inside config
         if device.robot_config == None:
@@ -266,14 +347,83 @@ class MoxieLauncherView(generic.DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['built_in_modules'] = RECOMMENDABLE_MODULES
-        context['remote_modules'] = [
-            {'name': chat.name, 'module_id': chat.module_id, 'content_id': content_id}
-            for chat in SinglePromptChat.objects.order_by('name')
-            for content_id in chat.content_id.split('|')
-        ]
+        context['built_in_modules'] = [dict(
+            item,
+            title=MISSION_DESCRIPTIONS.get(item['module_id'], (item['module_id'], 'Built-in Moxie activity.'))[0],
+            description=MISSION_DESCRIPTIONS.get(item['module_id'], (item['module_id'], 'Built-in Moxie activity.'))[1],
+        ) for item in RECOMMENDABLE_MODULES]
+        remote_descriptions = {
+            ('OPENMOXIE_CHAT', 'default'): 'Open-ended conversation using your selected local or cloud AI, family profile, and recent memory.',
+            ('OPENMOXIE_TRIVIA', 'default'): 'A configurable, API-free trivia game with categories, score, fun facts, and playful interludes.',
+            ('OPENCONVO', 'reading'): 'Talk about a book, favorite characters, and what might happen next while reading together.',
+            ('OPENCONVO', 'storytelling'): 'Invent a new story together, taking turns adding characters, places, and surprising events.',
+        }
+        remote_names = {
+            ('OPENMOXIE_CHAT', 'default'): 'Talk with Moxie',
+            ('OPENMOXIE_TRIVIA', 'default'): 'Trivia game',
+            ('OPENCONVO', 'reading'): 'Reading companion',
+            ('OPENCONVO', 'storytelling'): 'Make a story together',
+        }
+        visible_remote = set(remote_descriptions)
+        seen = set()
+        context['remote_modules'] = []
+        for chat in SinglePromptChat.objects.order_by('module_id', 'name'):
+            for content_id in chat.content_id.split('|'):
+                key = (chat.module_id, content_id)
+                if key in seen or key not in visible_remote:
+                    continue
+                seen.add(key)
+                context['remote_modules'].append({
+                    'name': remote_names[key], 'module_id': chat.module_id, 'content_id': content_id,
+                    'description': remote_descriptions[key],
+                })
         context['online'] = get_instance().robot_data().device_online(self.object.device_id)
         return context
+
+
+class TriviaSettingsView(generic.DetailView):
+    template_name = 'hive/trivia_settings.html'
+    model = MoxieDevice
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['questions'] = TriviaQuestion.objects.all()
+        context['categories'] = list(
+            TriviaQuestion.objects.order_by('category').values_list('category', flat=True).distinct()
+        )
+        return context
+
+
+@require_http_methods(['POST'])
+def trivia_configure(request, pk):
+    device = get_object_or_404(MoxieDevice, pk=pk)
+    action = request.POST.get('action', 'save_options')
+    if action == 'save_options':
+        device.trivia_categories = request.POST.getlist('categories')
+        try:
+            device.trivia_question_count = max(3, min(20, int(request.POST.get('question_count', 10))))
+        except ValueError:
+            return HttpResponseBadRequest('Question count must be a number.')
+        device.save(update_fields=['trivia_categories', 'trivia_question_count'])
+        message = 'Trivia categories and game length saved.'
+    elif action == 'save_question':
+        question_id = request.POST.get('question_id')
+        item = get_object_or_404(TriviaQuestion, pk=question_id) if question_id else TriviaQuestion()
+        item.category = request.POST.get('category', '').strip().title()
+        item.question = request.POST.get('question', '').strip()
+        item.accepted_answers = [value.strip().lower() for value in re.split(r'[,\n]+', request.POST.get('answers', '')) if value.strip()]
+        item.fun_fact = request.POST.get('fun_fact', '').strip()
+        item.enabled = request.POST.get('enabled') == 'on'
+        if not item.category or not item.question or not item.accepted_answers:
+            return HttpResponseBadRequest('Category, question, and at least one accepted answer are required.')
+        item.save()
+        message = 'Trivia question saved.'
+    elif action == 'delete_question':
+        get_object_or_404(TriviaQuestion, pk=request.POST.get('question_id')).delete()
+        message = 'Trivia question deleted.'
+    else:
+        return HttpResponseBadRequest('Unknown trivia configuration action.')
+    return redirect(f"{reverse('hive:trivia_settings', args=[device.pk])}?saved={message}")
 
 
 @require_http_methods(["POST"])
@@ -299,10 +449,73 @@ def launch_mission(request, pk):
         device.robot_config = {}
     device.robot_config['wake_button_enabled'] = True
     device.save(update_fields=['schedule', 'robot_config'])
-    get_instance().handle_config_updated(device)
-    sent = get_instance().send_wakeup_to_bot(device.device_id)
+    service = get_instance()
+    service.handle_config_updated(device)
+    service.robot_data().schedule_update_live(device)
+    sent = _interrupt_and_launch(service, device, module_id, content_id or None, f'Starting {module_id}.')
     message = f'Launching {module_id}' + (f' - {content_id}' if content_id else '')
     message += ' now.' if sent else ' on the next wake; Moxie is currently offline.'
+    return redirect('hive:dashboard_alert', alert_message=message)
+
+
+def _set_quick_launch_schedule(device, module_id, content_id='default', label='Activity'):
+    base_schedule = deepcopy(device.schedule.schedule) if device.schedule else {'provided_schedule': []}
+    base_schedule['wake_module'] = {'module_id': module_id, 'content_id': content_id}
+    launch_schedule, _ = MoxieSchedule.objects.update_or_create(
+        name=f'Quick {label} - {device.device_id}',
+        defaults={'schedule': base_schedule, 'source_version': 1},
+    )
+    device.schedule = launch_schedule
+    if device.robot_config is None:
+        device.robot_config = {}
+    device.robot_config['wake_button_enabled'] = True
+    device.save(update_fields=['schedule', 'robot_config'])
+
+
+def _interrupt_and_launch(service, device, module_id, content_id='default', text='Starting now.'):
+    """Interrupt the current activity, wake if needed, and launch with a schedule fallback."""
+    if not service.robot_data().device_online(device.device_id):
+        return False
+    service.queue_remote_action_to_bot(device.device_id, 'launch', module_id, content_id, text)
+    service.send_telehealth_interrupt(device.device_id)
+    service.send_wakeup_to_bot(device.device_id)
+    return True
+
+
+@require_http_methods(["POST"])
+def robot_control(request, pk):
+    device = get_object_or_404(MoxieDevice, pk=pk)
+    action = request.POST.get('action', '')
+    service = get_instance()
+    online = service.robot_data().device_online(device.device_id)
+    message = ''
+    if action in ('wake', 'chat', 'trivia', 'stop', 'interrupt'):
+        target = 'trivia' if action == 'trivia' else 'chat'
+        module_id = 'OPENMOXIE_TRIVIA' if target == 'trivia' else 'OPENMOXIE_CHAT'
+        _set_quick_launch_schedule(device, module_id, label=target.title())
+        service.handle_config_updated(device)
+        service.robot_data().schedule_update_live(device)
+        immediate = _interrupt_and_launch(
+            service, device, module_id, 'default',
+            "I'm listening. What would you like to talk about?" if target == 'chat' else "Trivia time! Get your thinking cap ready.",
+        )
+        label = {'wake': 'Wake and Chat', 'stop': 'Stop and Chat', 'interrupt': 'Stop and Chat'}.get(action, action.title())
+        message = label + (' launched immediately.' if immediate else ' queued for the next connection.')
+    elif action == 'sleep':
+        if online:
+            sent = service.queue_remote_action_to_bot(device.device_id, 'sleep', text='Okay. Good night!')
+            service.send_telehealth_interrupt(device.device_id)
+            # Wake is also used as a router nudge. If Moxie is already awake it is
+            # harmless; if she is between activities it causes the request that
+            # consumes the queued sleep action instead of launching a schedule.
+            service.send_wakeup_to_bot(device.device_id)
+        else:
+            sent = False
+        message = 'Sleep requested. Waiting for Moxie to report sleep; voice fallback: “Go to sleep, please.”' if sent else 'Moxie is offline; no sleep command was sent.'
+    else:
+        return HttpResponseBadRequest('Unknown robot action.')
+    if request.POST.get('ajax') == '1':
+        return JsonResponse({'ok': True, 'message': message})
     return redirect('hive:dashboard_alert', alert_message=message)
 
 # MOXIE - Edit Moxie Face Customizations
@@ -470,6 +683,7 @@ def moxie_wake_chat(request, pk):
         device.robot_config['wake_button_enabled'] = True
         device.save(update_fields=['schedule', 'robot_config'])
         get_instance().handle_config_updated(device)
+        get_instance().robot_data().schedule_update_live(device)
         logger.info('Waking %s directly into OpenMoxie chat', device)
         sent = get_instance().send_wakeup_to_bot(device.device_id)
         message = 'Wake & Chat sent. Moxie should open with a chat prompt.' if sent else 'Moxie was offline.'

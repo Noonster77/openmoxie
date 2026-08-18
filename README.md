@@ -135,6 +135,25 @@ OpenMoxie can use local models without paid API requests. Chat and speech recogn
 
 The local Whisper model downloads on the first spoken request and is cached in `local/work/models`. That first transcription can take noticeably longer. Subsequent transcriptions reuse the loaded model. LM Studio does not provide the audio transcription endpoint used by Moxie, and the Qwen chat GGUF is not a Whisper model, which is why OpenMoxie runs faster-whisper separately.
 
+## Parent monitor, voice controls, and privacy
+
+The Control Center provides a live conversation view, a redacted server-log view, recovery controls, mission descriptions, and daily transcript downloads. Conversation text is stored locally in SQLite and also appended to `local/work/transcripts/<device-id>/<date>.txt`.
+
+Activity buttons interrupt the current module before launching, and refresh the connected robot's schedule cache so an earlier mission cannot launch by mistake. Trivia includes 30 editable questions across Animals, Math, Science, Silly, Words, and World categories. Use **Trivia setup** to choose categories, change game length, and add or edit questions.
+
+Global voice shortcuts work while the robot is sending conversation requests:
+
+- `Play trivia`
+- `Talk about something else`
+- `Stop this mission`
+- `Go to sleep`
+- `I'm Jack`
+- `This is Daddy`
+
+Parent-review safety flags use conservative local keyword matching. They can miss concerning language or flag harmless context, so they are an aid rather than a monitoring guarantee or a replacement for adult supervision.
+
+This server does not currently receive Moxie's camera frames or a reliable face-identity signal. AI vision, face recognition, and person-following are therefore not enabled. Identifying Jack or Daddy is explicit and voice-based, not biometric. This avoids silently collecting facial templates for children and works with the existing server-only integration.
+
 # MQTT Broker - Direct Install
 
 I have been running this all from a headless Ubuntu system using mosquitto MQTT as a broker and configured it for anonymous

@@ -3,10 +3,15 @@
 {% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Hive Site Admin') }}{% endblock %}
 
 {% block branding %}
-<div id="site-name"><a href="{% url 'admin:index' %}">Hive Administration</a></div>
+<div id="site-name"><a href="{% url 'admin:index' %}">OpenMoxie Administration</a> <span style="font-size:.65em;margin-left:1rem"><a href="{% url 'hive:dashboard' %}">Control Center</a> &middot; <a href="{% url 'hive:setup' %}">AI &amp; Network</a></span></div>
 {% if user.is_anonymous %}
   {% include "admin/color_theme_toggle.html" %}
 {% endif %}
 {% endblock %}
 
-{% block nav-global %}{% endblock %}
+{% block nav-global %}
+<nav style="display:flex;gap:1rem;align-items:center;margin-left:1.5rem">
+  <a href="{% url 'hive:dashboard' %}" style="color:var(--header-link-color)">Control Center</a>
+  <a href="{% url 'hive:setup' %}" style="color:var(--header-link-color)">AI &amp; Network</a>
+</nav>
+{% endblock %}

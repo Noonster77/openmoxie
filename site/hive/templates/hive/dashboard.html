@@ -1,146 +1,51 @@
-{% extends 'base.html' %}
-{% load static %}
-{% block content %}
-<div class="moxheader"><a href="{% url 'hive:dashboard' %}"><img class="moximage" src="{% static 'hive/openmoxie_logo.svg' %}"></a>OpenMoxie<span class="moxversion">{{moxie_version}}</span></div>
-{% if alert %}
-    <div class="alert alert-primary">{{ alert }}</div>
-{% endif %}
-<div class="p-3">
-<h2>Connection Diagnostics</h2>
-<div class="card mb-3">
-  <div class="card-body">
-    <div class="row g-2">
-      <div class="col-md-3"><strong>MQTT broker</strong><br>
-        <span id="broker-status" class="badge {% if service_status.broker_connected %}text-bg-success{% else %}text-bg-danger{% endif %}">
-          {% if service_status.broker_connected %}Connected{% else %}Disconnected{% endif %}
-        </span>
-      </div>
-      <div class="col-md-3"><strong>Broker address</strong><br><span id="broker-address">{{ service_status.mqtt_host|default:"unknown" }}{% if service_status.mqtt_port %}:{{ service_status.mqtt_port }}{% endif %}</span></div>
-      <div class="col-md-3"><strong>Last robot activity</strong><br><span id="device-activity">{% if service_status.last_device_activity %}{{ service_status.last_device_activity }}{% else %}None seen yet{% endif %}</span></div>
-      <div class="col-md-3"><strong>Last robot ID</strong><br><span id="device-id">{{ service_status.last_device_id|default:"None seen yet" }}</span></div>
+{% extends 'base.html' %}{% load static %}{% block content %}
+{% if alert %}<div class="alert alert-primary shadow-sm">{{alert}}</div>{% endif %}
+<div class="page-heading"><div><div class="eyebrow">Parent control center</div><h1>Moxie at a glance</h1><p>See what she is doing, recover a stuck activity, and review conversations.</p></div><div class="secondary-links"><a href="{% url 'hive:setup' %}">AI settings</a><a href="{% url 'hive:endpoint_qr' %}">Migration QR</a><a href="{% url 'hive:wifi_edit' %}">Wi-Fi QR</a></div></div>
+
+<div class="metric-grid mb-4">
+  <div class="metric"><div class="metric-label">MQTT service</div><div class="metric-value"><span id="broker-dot" class="status-dot {% if service_status.broker_connected %}online{% else %}offline{% endif %}"></span><span id="broker-status">{% if service_status.broker_connected %}Connected{% else %}Disconnected{% endif %}</span></div></div>
+  <div class="metric"><div class="metric-label">Robot activity</div><div class="metric-value" id="device-activity">{{service_status.last_device_activity|default:'Waiting for Moxie'}}</div></div>
+  <div class="metric"><div class="metric-label">Local AI</div><div class="metric-value">{{ai_config.chat_provider|default:'Not set'}} <small class="text-muted">/ {{ai_config.stt_provider|default:'Not set'}} speech</small></div></div>
+  <div class="metric"><div class="metric-label">Parent review today</div><div class="metric-value {% if safety_alerts_today %}text-danger{% endif %}">{{safety_alerts_today}} flagged</div></div>
+</div>
+
+{% if service_status.last_connect_error %}<div id="connection-error" class="alert alert-warning">{{service_status.last_connect_error}}</div>{% else %}<div id="connection-error" class="alert alert-warning d-none"></div>{% endif %}
+{% if service_status.last_processing_error %}<div id="processing-error" class="alert alert-danger">{{service_status.last_processing_error}}</div>{% else %}<div id="processing-error" class="alert alert-danger d-none"></div>{% endif %}
+
+<h2 class="h4 fw-bold mb-3">Your robots</h2>
+<div class="device-grid mb-4">
+{% for device in recent_devices %}
+  <section class="device-card">
+    <div class="device-top"><div><div class="device-name">{{device.name|default:'Moxie'}}</div><div class="device-meta">Talking with {{device.robot_config.child_pii.nickname|default:'friend'}} • {{device.device_id}}</div></div><div><span class="status-dot {% if device.device_id in live %}online{% else %}offline{% endif %}"></span><strong>{% if device.device_id in live %}Online{% else %}Offline{% endif %}</strong><div class="device-meta" data-device-mode="{{device.device_id}}">{{device.state.mode|default:'connecting'}}</div></div></div>
+    <div class="quick-actions">
+      <form method="post" action="{% url 'hive:robot_control' device.pk %}">{% csrf_token %}<input type="hidden" name="action" value="wake"><button class="action-wake">Wake &amp; Chat</button></form>
+      <form method="post" action="{% url 'hive:robot_control' device.pk %}">{% csrf_token %}<input type="hidden" name="action" value="chat"><button class="action-chat">Chat</button></form>
+      <form method="post" action="{% url 'hive:robot_control' device.pk %}">{% csrf_token %}<input type="hidden" name="action" value="trivia"><button class="action-trivia">Trivia</button></form>
+      <form method="post" action="{% url 'hive:robot_control' device.pk %}">{% csrf_token %}<input type="hidden" name="action" value="stop"><button class="action-stop">Stop &amp; Chat</button></form>
+      <form method="post" action="{% url 'hive:robot_control' device.pk %}">{% csrf_token %}<input type="hidden" name="action" value="sleep"><button class="action-sleep">Sleep</button></form>
     </div>
-    <div id="connection-error" class="alert alert-warning mt-3 mb-0 {% if not service_status.last_connect_error %}d-none{% endif %}">{{ service_status.last_connect_error }}</div>
-    <div id="processing-error" class="alert alert-danger mt-3 mb-0 {% if not service_status.last_processing_error %}d-none{% endif %}">{{ service_status.last_processing_error }}</div>
-    <p class="text-muted mt-2 mb-0 small">This panel refreshes automatically. "Broker connected" confirms the OpenMoxie server reached MQTT; "Last robot activity" confirms Moxie itself reached the broker.</p>
-  </div>
+    <div class="secondary-links"><a href="{% url 'hive:monitor' device.pk %}">Live monitor</a><a href="{% url 'hive:transcripts' device.pk %}">Transcripts</a><a href="{% url 'hive:moxie_launcher' device.pk %}">Activity library</a><a href="{% url 'hive:trivia_settings' device.pk %}">Trivia setup</a><a href="{% url 'hive:moxie' device.pk %}">Profile &amp; settings</a><a href="{% url 'hive:puppet' device.pk %}">Puppet</a></div>
+    {% if forloop.first %}<span id="primary-live-url" data-url="{% url 'hive:live_activity' device.pk %}"></span>{% endif %}
+  </section>
+{% empty %}<div class="panel"><h3>No Moxie found yet</h3><p>Use the Migration QR and wake the robot. It will appear here after reaching MQTT.</p></div>{% endfor %}
 </div>
-<div class="alert {% if ai_config.chat_provider == 'lmstudio' or openai_configured %}alert-info{% else %}alert-warning{% endif %}">
-  <strong>AI:</strong> Chat provider: <strong>{{ai_config.chat_provider|default:"not configured"}}</strong>
-  {% if ai_config %}({{ai_config.chat_model}}); speech provider: <strong>{{ai_config.stt_provider}}</strong>{% endif %}.
-  {% if ai_config.chat_provider == 'openai' and not openai_configured %}An OpenAI key is required for chat.{% endif %}
-  <form class="d-inline ms-2" method="post" action="{% url 'hive:test_ai_connection' %}">{% csrf_token %}<button class="btn btn-sm btn-outline-dark" type="submit">Test AI Connection</button></form>
+
+<div class="safety-banner mb-4"><strong>Voice shortcuts:</strong> “Play trivia,” “Talk about something else,” “Stop this mission,” “Go to sleep,” “I’m Jack,” and “This is Daddy.” Safety flags are keyword-based review aids and can make mistakes; they are not a substitute for adult supervision.</div>
+
+<div class="two-column mb-4">
+  <section class="panel"><div class="d-flex justify-content-between align-items-center"><h2 class="panel-title">Live conversation</h2><span id="active-speaker" class="badge text-bg-light">Speaker: unknown</span></div><div id="conversation-feed" class="conversation-feed"><p class="text-muted">Waiting for conversation activity…</p></div></section>
+  <section class="panel"><div class="d-flex justify-content-between align-items-center"><h2 class="panel-title">Live debug</h2><span class="text-muted small">Auto-refreshing</span></div><pre id="debug-window" class="debug-window">Waiting for server logs…</pre></section>
 </div>
-<h2>Devices</h2>
-<a title="Code to show Moxie to move to this service" class="btn btn-primary btn-sm" role="button" href="{% url 'hive:endpoint_qr' %}">Migration QR Code</a>
-<a title="Create QR with WiFI credentials to get Moxie on a new network" class="btn btn-primary btn-sm" role="button" href="{% url 'hive:wifi_edit' %}">Wifi QR Code</a>
-<a title="Configure System" class="btn btn-secondary btn-sm" href="{% url 'hive:setup' %}">Setup</a>
-<a title="Administer Database" class="btn btn-secondary btn-sm" href="{% url 'admin:index' %}">Admin</a>
-<table class="table table-striped">
-  <tr><th class="w-25">Status</th><th>Moxie Devices</th><th>Schedule</th><th>Actions</th></tr>
-  {% for device in recent_devices %}
-  <tr><td>
-    {% if device.device_id in live %}
-    <span class="badge text-bg-success">Online</span>
-    <span class="badge text-bg-info" data-device-mode="{{device.device_id}}">{{device.state.mode|default:"connecting"}}</span>
-    {{device.last_connect|timesince}}
-    {% else %}
-    <span class="badge text-bg-secondary">Offline</span> {{device.last_disconnect|timesince}}
-    {% endif %}
-  </td><td><a href="{% url 'hive:moxie' device.pk %}">{{device}}</a>
-    {% if not device.is_paired %}
-    <span class="badge text-bg-danger">Unpaired</span>
-    {% endif %}
-  </td><td>{{device.schedule}}</td>
-  <td>
-    {% if device.device_id in live %}
-    <form class="d-inline" method="post" action="{% url 'hive:moxie_wake' device.pk %}">
-      {% csrf_token %}<button class="btn btn-success btn-sm" type="submit">Wake</button>
-    </form>
-    <form class="d-inline" method="post" action="{% url 'hive:moxie_wake_chat' device.pk %}">
-      {% csrf_token %}<button title="Wake directly into the OpenMoxie Chat module" class="btn btn-primary btn-sm" type="submit">Wake &amp; Chat</button>
-    </form>
-    {% endif %}
-    <a title="Modify completed missions or reset content progress" class="btn btn-secondary btn-sm" href="{% url 'hive:moxie_missions' device.pk %}">Missions</a>
-    <a title="Launch a built-in or OpenMoxie mission" class="btn btn-primary btn-sm" href="{% url 'hive:moxie_launcher' device.pk %}">Launch Mission</a>
-    <a title="Customize Moxie's Face" class="btn btn-secondary btn-sm" href="{% url 'hive:face' device.pk %}">Edit Face</a>
-    <a title="Puppeteer Moxie" class="btn btn-secondary btn-sm" href="{% url 'hive:puppet' device.pk %}">Puppet</a>
-    <a title="View Moxie persistent data." class="btn btn-secondary btn-sm" href="{% url 'hive:moxie_data' device.pk %}">Data</a>
-  </td>
-  </tr>
-  {% endfor %}
-</table>
-<br>
-<h2>Content Database</h2>
-<table class="table table-striped">
-  <tr><th>Refresh</th><td>
-    <a title="Reload any database entries modified in the Admin view" class="btn btn-primary btn-sm" role="button" href="{% url 'hive:reload_database' %}">Refresh from DB</a>
-  </td></tr>
-  <tr><th>Export</th><td>
-    <a title="Export some or all of your Moxie content" class="btn btn-primary btn-sm" role="button" href="{% url 'hive:export_content' %}">Export Content</a>
-  </td></tr>
-  <tr><th>Import</th><td>
-    <form method="post" enctype="multipart/form-data" action="{% url 'hive:import_review' %}" method="post">
-      {% csrf_token %}
-      <div class="form-group">
-        <input title="Select Content JSON file to Upload" type="file" id="json_file" name="json_file" accept=".json" class="form-control-file">
-        <button title="Upload content to review for adding to your own Moxie content" type="submit" class="btn btn-primary btn-sm">Upload for Review</button>
-      </div>
-    </form>
-  </td></tr>
-</table>
-<br>
-<h2>Schedules</h2>
-<table class="table table-striped">
-  <tr><th>Name</th></tr>
-  {% for s in schedules %}
-  <tr><td>{{s.name}}</td></tr>
-  {% endfor %}
-</table>
-<br>
-<h2>Conversations</h2>
-<table class="table table-striped">
-  <tr><th>Name</th><th>Module ID</th><th>Content ID</th><th></th></tr>
-  {% for s in conversations %}
-  <tr><td>{{s}}</td><td>{{s.module_id}}</td><td>{{s.content_id}}</td><td><a href="{% url 'hive:interact' s.pk %}">Interact</a></td></tr>
-  {% endfor %}
-</table>
-</div>
+
+<details class="panel"><summary class="fw-bold">Content and maintenance</summary><div class="secondary-links mt-3"><a href="{% url 'hive:reload_database' %}">Reload database content</a><a href="{% url 'hive:export_content' %}">Export content</a><a href="{% url 'admin:index' %}">Database admin</a></div><p class="text-muted mt-3 mb-0">{{conversations|length}} conversations and {{schedules|length}} schedules are installed.</p></details>
+
 <script>
-(function () {
-  const statusUrl = "{% url 'hive:connection_status' %}";
-  function displayTime(value) {
-    if (!value) return 'None seen yet';
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString();
-  }
-  async function refreshConnectionStatus() {
-    try {
-      const response = await fetch(statusUrl, {cache: 'no-store'});
-      const status = await response.json();
-      const badge = document.getElementById('broker-status');
-      badge.textContent = status.broker_connected ? 'Connected' : 'Disconnected';
-      badge.className = 'badge ' + (status.broker_connected ? 'text-bg-success' : 'text-bg-danger');
-      document.getElementById('broker-address').textContent = status.mqtt_host ? status.mqtt_host + ':' + status.mqtt_port : 'unknown';
-      document.getElementById('device-activity').textContent = displayTime(status.last_device_activity);
-      document.getElementById('device-id').textContent = status.last_device_id || 'None seen yet';
-      document.querySelectorAll('[data-device-mode]').forEach(function (element) {
-        const detail = status.devices && status.devices[element.dataset.deviceMode];
-        element.textContent = detail && detail.mode ? detail.mode : 'connecting';
-      });
-      const error = document.getElementById('connection-error');
-      error.textContent = status.last_connect_error || '';
-      error.classList.toggle('d-none', !status.last_connect_error);
-      const processingError = document.getElementById('processing-error');
-      processingError.textContent = status.last_processing_error || '';
-      processingError.classList.toggle('d-none', !status.last_processing_error);
-    } catch (error) {
-      const warning = document.getElementById('connection-error');
-      warning.textContent = 'Could not load connection status: ' + error.message;
-      warning.classList.remove('d-none');
-    }
-  }
-  refreshConnectionStatus();
-  window.setInterval(refreshConnectionStatus, 3000);
-}());
+(function(){
+ const statusUrl="{% url 'hive:connection_status' %}", liveMarker=document.getElementById('primary-live-url');
+ function time(v){if(!v)return 'Waiting for Moxie';const d=new Date(v);return isNaN(d)?v:d.toLocaleString()}
+ function renderEvents(events){const feed=document.getElementById('conversation-feed');feed.innerHTML='';if(!events.length){feed.innerHTML='<p class="text-muted">No recorded conversation yet.</p>';return}events.forEach(e=>{const b=document.createElement('div');b.className='bubble '+e.role+(e.safety_flagged?' flagged':'');const m=document.createElement('div');m.className='bubble-meta';m.textContent=(e.role==='user'?'Person':'Moxie')+' • '+new Date(e.time).toLocaleTimeString()+(e.safety_flagged?' • PARENT REVIEW: '+e.safety_categories.join(', '):'');const t=document.createElement('div');t.textContent=e.text;b.append(m,t);feed.appendChild(b)});feed.scrollTop=feed.scrollHeight}
+ async function refresh(){try{const s=await(await fetch(statusUrl,{cache:'no-store'})).json();const ok=s.broker_connected;document.getElementById('broker-dot').className='status-dot '+(ok?'online':'offline');document.getElementById('broker-status').textContent=ok?'Connected':'Disconnected';document.getElementById('device-activity').textContent=time(s.last_device_activity);document.querySelectorAll('[data-device-mode]').forEach(el=>{const d=s.devices&&s.devices[el.dataset.deviceMode];el.textContent=d&&d.mode?d.mode:'connecting'});for(const [id,key] of [['connection-error','last_connect_error'],['processing-error','last_processing_error']]){const el=document.getElementById(id);el.textContent=s[key]||'';el.classList.toggle('d-none',!s[key])}if(liveMarker){const l=await(await fetch(liveMarker.dataset.url,{cache:'no-store'})).json();renderEvents(l.events);document.getElementById('active-speaker').textContent='Speaker: '+l.active_speaker;const dbg=document.getElementById('debug-window');dbg.textContent=l.debug.join('\n');dbg.scrollTop=dbg.scrollHeight}}catch(e){document.getElementById('connection-error').textContent='Live refresh failed: '+e.message;document.getElementById('connection-error').classList.remove('d-none')}}
+ refresh();setInterval(refresh,2500);
+})();
 </script>
 {% endblock %}

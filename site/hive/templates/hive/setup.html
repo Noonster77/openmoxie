@@ -1,196 +1,28 @@
-{% extends 'base.html' %}
-{% load static %}
-{% block content %}
-<div class="moxheader"><a href="{% url 'hive:dashboard' %}"><img class="moximage" src="{% static 'hive/openmoxie_logo.svg' %}"></a>OpenMoxie<span class="moxversion">{{moxie_version}}</span></div>
-<div class="text-bg-secondary p-3">
-<h1>Welcome to OpenMoxie!</h1>
-<p>
-    The OpenMoxie service allows this computer to act as a replacement for Moxie's cloud infrastructure.
-</p>
-<div class="half text-bg-danger p-3">
-  <p>
-    <strong>Please read carefully!</strong> This implementation has minimal security and should always be operated on a LAN behind a firewall that protects
-  ports <strong>8883</strong> and <strong>8001</strong> from the Internet.  API keys and service accounts are stored
-  unencrypted in the host file system.
-  </p>
-  <ul>
-    <li>Once you add API keys, devices connecting to port <strong>8001</strong> will
-  be able to perform chat inferences to OpenAI that will incur charges.</li>
-    <li>Devices connected on port <strong>8883</strong> will be able to perform chat inferences and use Speech-to-Text services that will incur charges.</li>
-    <li>If you connect a Google Service Account Key, the key itself will be shared with devices connecting on port <strong>8883</strong>.</li>
-  </ul>
-</div>
-<p></p>
-<h3>Getting Your Own OpenAI API Key</h3>
-<p>
-  There are a few requirements to setup before you can use this with your Moxie.  The primary requirement
-  is either your own personal API key from OpenAI or locally running AI models. OpenAI remains the default for Moxie Chat and Speech-to-Text.
-  These services are not free and you will be responsible for managing your OpenAI account to ensure
-  it has sufficient credits, however Whisper is very inexpensive and the default conversational model
-  (3.5 turbo) is a very economical model.
-</p>
-<p>
-    You will need to visit <a class="link-light" target="_blank" href="https://platform.openai.com/settings/organization/billing/overview">OpenAI Billing</a> page, 
-    create an account, add your credit card, and purchase some credits.  We recommend
-    starting with a small amount such as $10 and keeping an eye on your usage until you understand the costs, though they are typically modest.
-</p>
-<p>
-    Next, visit the <a class="link-light" target="_blank" href="https://platform.openai.com/settings/organization/api-keys">OpenAI API Keys</a> to create a unique
-    API key (secret key) for use with OpenMoxie.  Give it a nice name like "Moxie Services" and save the API key to paste into the form below.
-</p>
-<h3>Using Google Speech Instead</h3>
-<p>
-  OpenMoxie is configured to use OpenAI Whisper for Speech-to-Text by default for simplicity and lower cost, but Google Speech is more
-  responsive and generally works better with Moxie's internal speech processing.  Google also offers free credits when you sign-up.
-  If you would rather use Google for Speech-to-Text services
-  you can include a service account key with permissions to use Google Speech in the form below.  This key will be provided to Moxie and used if you
-  set <kbd>"stt": "0"</kbd> in the robot settings.  Visit <a class="link-light" target="_blank" href="https://cloud.google.com/">Google Cloud Platform</a> for details
-  on Google's offering.
-</p>
-<hr>
-<h1>Configuration</h1>
-<form id="hive_edit" action="{% url 'hive:hive_configure' %}" method="post">
-    {% csrf_token %}
-    <div class="mb-3">
-      <label for="apikey" class="form-label fw-bold fs-5">OpenAI API Key</label>
-      <input type="text" class="form-control" name="apikey" id="apikey" aria-describedby="apiHelp" placeholder="{% if object.openai_api_key %}[Key exists and will be kept unless overridden.]{% else %}Paste OpenAI API key.{% endif %}">
-      <div id="apiHelp" class="form-text text-light">This be be stored in your local database and used locally for AI and Speech services.</div>
-    </div>
-    <h3>Conversation AI</h3>
-    <div class="row mb-3">
-      <label for="chat_provider" class="col-sm-3 col-form-label fw-bold">Chat Provider</label>
-      <div class="col-sm-9"><select class="form-select" name="chat_provider" id="chat_provider">
-        <option value="openai" {% if object.chat_provider != 'lmstudio' %}selected{% endif %}>OpenAI API</option>
-        <option value="lmstudio" {% if object.chat_provider == 'lmstudio' %}selected{% endif %}>LM Studio (local)</option>
-      </select></div>
-    </div>
-    <div class="row mb-3">
-      <label for="chat_model" class="col-sm-3 col-form-label fw-bold">Chat Model</label>
-      <div class="col-sm-9"><input class="form-control" name="chat_model" id="chat_model" value="{{object.chat_model|default:'gpt-4o-mini'}}">
-        <div class="form-text text-light">For LM Studio, copy the loaded model identifier shown in its Developer tab.</div>
-      </div>
-    </div>
-    <div class="row mb-3">
-      <label for="chat_base_url" class="col-sm-3 col-form-label fw-bold">LM Studio Base URL</label>
-      <div class="col-sm-9"><input class="form-control" name="chat_base_url" id="chat_base_url" value="{{object.chat_base_url|default:'http://host.docker.internal:1234/v1'}}">
-        <div class="form-text text-light">Use <kbd>http://host.docker.internal:1234/v1</kbd> because OpenMoxie runs inside Docker.</div>
-      </div>
-    </div>
-    <h3>Speech Recognition</h3>
-    <div class="row mb-3">
-      <label for="stt_provider" class="col-sm-3 col-form-label fw-bold">Speech Provider</label>
-      <div class="col-sm-9"><select class="form-select" name="stt_provider" id="stt_provider">
-        <option value="openai" {% if object.stt_provider != 'local' %}selected{% endif %}>OpenAI Whisper API</option>
-        <option value="local" {% if object.stt_provider == 'local' %}selected{% endif %}>Local faster-whisper (no API charge)</option>
-      </select></div>
-    </div>
-    <div class="row mb-3">
-      <label for="local_stt_model" class="col-sm-3 col-form-label fw-bold">Local Whisper Model</label>
-      <div class="col-sm-9"><select class="form-select" name="local_stt_model" id="local_stt_model">
-        <option value="tiny.en" {% if object.local_stt_model == 'tiny.en' %}selected{% endif %}>tiny.en - fastest, least accurate</option>
-        <option value="base.en" {% if object.local_stt_model == 'base.en' %}selected{% endif %}>base.en - fast</option>
-        <option value="small.en" {% if object.local_stt_model == 'small.en' or not object %}selected{% endif %}>small.en - recommended</option>
-        <option value="medium.en" {% if object.local_stt_model == 'medium.en' %}selected{% endif %}>medium.en - slower, more accurate</option>
-      </select><div class="form-text text-light">The model downloads once on the first spoken request and is cached under <kbd>site/work/models</kbd>.</div></div>
-    </div>
-    <div class="alert alert-info">
-      <strong>LM Studio local setup:</strong>
-      <ol class="mb-0">
-        <li>Import/load the downloaded Qwen GGUF in LM Studio.</li>
-        <li>Open <strong>Developer</strong>, start the local server on port <strong>1234</strong>, and enable serving on the local network if LM Studio requires it for Docker access.</li>
-        <li>Copy LM Studio's exact loaded model identifier into <strong>Chat Model</strong>.</li>
-        <li>Select <strong>LM Studio (local)</strong>, keep the Docker URL above, save, then use a conversation's <strong>Interact</strong> link to test it.</li>
-      </ol>
-      Local faster-whisper needs no separate app. Its first transcription is slower while the selected model downloads and loads; later requests use the cached model.
-    </div>
-    <div class="mb-3">
-      <label for="googleapikey" class="form-label fw-bold fs-5">(OPTIONAL) Google Service Account Key</label>
-      <input type="text" class="form-control" name="googleapikey" id="googleapikey" aria-describedby="googleapiHelp" placeholder="{% if object.google_api_key %}[Key exists and will be kept unless overridden.]{% else %}Paste Google Service Account key.{% endif %}">
-      <div id="googleapiHelp" class="form-text text-light">
-        This be be stored in your local database and provided to connecting Moxie.
-      </div>
-    </div>
-    <div class="mb-3">
-      <label for="hostname" class="form-label fw-bold fs-5">Hostname</label>
-      <div class="half text-bg-warning p-3" style="margin-bottom: 5px;">
-        <strong>Important! </strong>Hostname is the address Moxie will use to talk to your PC.  It is best to use your computer name, 
-        but if your router does not provide LAN DNS services, you may need to use your LAN IP address here.
-      </div>
-      <input type="text" class="form-control" name="hostname" id="hostname" aria-describedby="hostnameHelp" placeholder="Enter computer name" value="{{object.external_host}}">
-      <div id="hostnameHelp" class="form-text text-light">The local network name of this computer, either your computer name or LAN network address.</div>
-    </div>
-    {% if needs_admin %}
-    <h3>Database Administrator</h3>
-    <p>Setup the local database administrator password.  This is the superuser password for your local SQLite database and is used when accessing the Admin page for this project.</p>
-    <div class="half text-bg-warning p-3" style="margin-bottom: 5px;">
-      <strong>Important! </strong>You will need this password to access the Admin section later!
-    </div>
-    <div class="row mb-3">
-      <label for="adminUser" class="col-sm-2 col-form-label">Admin User</label>
-      <div class="col-sm-10">
-        <input type="text" class="form-control" id="adminUser" name="adminUser" value="admin">
-      </div>
-    </div>
-    <div class="row mb-3">
-      <label for="adminPassword" class="col-sm-2 col-form-label">Admin Password</label>
-      <div class="col-sm-10">
-        <input type="password" class="form-control" id="adminPassword" name="adminPassword">
-      </div>
-    </div>
-    {% endif %}
-<!--
-    <div class="mb-3 form-check">
-      <input type="checkbox" class="form-check-input" name="allowall" id="allowall" aria-describedby="allowHelp">
-      <label class="form-check-label" for="allowall">Allow Services to Any Moxie</label>
-      <div id="hostnameHelp" class="form-text text-light">Check this to allow use by any Moxie on your network, otherwise each will need to be authorized explicity.</div>
-    </div>
- -->
-    <button type="submit" class="btn btn-primary">Submit</button>
-  </form>
-</div>
-<script>
-$(document).ready(function() {
-  $('#hive_edit').submit(function(event) {
-    var validated = true;
-    var err_msg = "Setup Cannot Complete:";
-
-    var hostname = $('#hostname').val().trim();
-    var googleApiKey = $('#googleapikey').val().trim();
-    {% if needs_admin %}
-    var adminUser = $('#adminUser').val().trim();
-    var adminPassword = $('#adminPassword').val().trim();
-    if (adminUser === '') {
-      err_msg += '\n-Admin User cannot be empty';
-      validated = false;
-    }
-    if (adminPassword === '') {
-      err_msg += '\n-Admin Password cannot be empty';
-      validated = false;
-    }
-    {% endif %}
-    if (hostname === '') {
-      err_msg += '\n-Hostname cannot be empty';
-      validated = false;
-    }
-    if (googleApiKey !== '' && !isValidJSON(googleApiKey)) {
-      err_msg += '\n-Google API Key must be a valid JSON string';
-      validated = false;
-    }
-
-    if (!validated) {
-      alert(err_msg);
-      event.preventDefault();
-    }
-  });
-});
-
-function isValidJSON(jsonString) {
-  try {
-    JSON.parse(jsonString);
-  } catch (e) {
-    return false;
-  }
-  return true;
-}
-</script>
+{% extends 'base.html' %}{% block content %}
+<div class="page-heading"><div><div class="eyebrow">AI &amp; network</div><h1>OpenMoxie setup</h1><p>Choose local or paid AI services and tell Moxie how to reach this computer.</p></div><a class="btn btn-outline-primary" href="{% url 'hive:dashboard' %}">Back to control center</a></div>
+<div class="safety-banner mb-4"><strong>Keep this private:</strong> run OpenMoxie only on a trusted home network. Do not expose ports <strong>8001</strong> or <strong>8883</strong> to the Internet. Stored service keys are not encrypted.</div>
+<form id="hive_edit" action="{% url 'hive:hive_configure' %}" method="post">{% csrf_token %}
+  <div class="settings-grid">
+    <section class="panel settings-card"><span class="step-chip">1</span><h2 class="panel-title">Conversation AI</h2><p class="form-text">LM Studio is local and has no per-message fee. OpenAI requires API credits.</p>
+      <label class="form-label" for="chat_provider">Chat provider</label><select class="form-select" name="chat_provider" id="chat_provider"><option value="openai" {% if object.chat_provider != 'lmstudio' %}selected{% endif %}>OpenAI API</option><option value="lmstudio" {% if object.chat_provider == 'lmstudio' %}selected{% endif %}>LM Studio (local)</option></select>
+      <label class="form-label" for="chat_model">Model identifier</label><input class="form-control" name="chat_model" id="chat_model" value="{{object.chat_model|default:'gpt-4o-mini'}}"><div class="form-text">For LM Studio, use the exact identifier shown in its Developer tab.</div>
+      <label class="form-label" for="chat_base_url">LM Studio server URL</label><input class="form-control" name="chat_base_url" id="chat_base_url" value="{{object.chat_base_url|default:'http://host.docker.internal:1234/v1'}}"><div class="form-text">Docker normally reaches LM Studio at <code>http://host.docker.internal:1234/v1</code>.</div>
+    </section>
+    <section class="panel settings-card"><span class="step-chip">2</span><h2 class="panel-title">Speech recognition</h2><p class="form-text">Local faster-whisper runs on this PC and avoids speech API charges.</p>
+      <label class="form-label" for="stt_provider">Speech provider</label><select class="form-select" name="stt_provider" id="stt_provider"><option value="openai" {% if object.stt_provider != 'local' %}selected{% endif %}>OpenAI Whisper API</option><option value="local" {% if object.stt_provider == 'local' %}selected{% endif %}>Local faster-whisper</option></select>
+      <label class="form-label" for="local_stt_model">Local Whisper model</label><select class="form-select" name="local_stt_model" id="local_stt_model"><option value="tiny.en" {% if object.local_stt_model == 'tiny.en' %}selected{% endif %}>tiny.en — fastest</option><option value="base.en" {% if object.local_stt_model == 'base.en' %}selected{% endif %}>base.en — fast</option><option value="small.en" {% if object.local_stt_model == 'small.en' or not object %}selected{% endif %}>small.en — recommended</option><option value="medium.en" {% if object.local_stt_model == 'medium.en' %}selected{% endif %}>medium.en — more accurate</option></select><div class="form-text">The first transcription downloads the model once; later requests use the cached copy.</div>
+    </section>
+    <section class="panel settings-card"><span class="step-chip">3</span><h2 class="panel-title">Service credentials</h2><p class="form-text">The OpenAI key is only needed when either provider above uses OpenAI.</p>
+      <label class="form-label" for="apikey">OpenAI API key</label><input type="password" class="form-control" name="apikey" id="apikey" autocomplete="off" placeholder="{% if object.openai_api_key %}Key saved — leave blank to keep it{% else %}Paste an API key{% endif %}">
+      <label class="form-label" for="googleapikey">Google service-account JSON <span class="text-muted">(optional)</span></label><textarea class="form-control" name="googleapikey" id="googleapikey" rows="3" placeholder="{% if object.google_api_key %}Key saved — leave blank to keep it{% else %}Paste JSON only if using Google speech{% endif %}"></textarea>
+    </section>
+    <section class="panel settings-card"><span class="step-chip">4</span><h2 class="panel-title">Home network</h2><p class="form-text">Use the computer name, or its fixed LAN address if your router does not provide local DNS.</p>
+      <label class="form-label" for="hostname">Hostname or LAN IP</label><input type="text" class="form-control" name="hostname" id="hostname" value="{{object.external_host}}" placeholder="Example: moxie-pc or 192.168.1.25"><div class="form-text">This is the address placed in the QR code and used by Moxie.</div>
+    </section>
+  </div>
+  <details class="panel mt-4"><summary class="fw-bold">LM Studio quick setup</summary><ol class="mt-3"><li>Load the GGUF model in LM Studio.</li><li>Open <strong>Developer</strong> and start the server on port <strong>1234</strong>.</li><li>Allow local-network serving if LM Studio asks.</li><li>Copy its exact model identifier above and select <strong>LM Studio (local)</strong>.</li></ol><p class="mb-0"><strong>Yes—conversation responses can stay fully local.</strong> With LM Studio selected for chat and faster-whisper selected for speech, ordinary chat and trivia make no OpenAI API request.</p></details>
+  {% if needs_admin %}<section class="panel mt-4"><h2 class="panel-title">Database administrator</h2><div class="form-row"><div><label class="form-label" for="adminUser">Admin user</label><input type="text" class="form-control" id="adminUser" name="adminUser" value="admin"></div><div><label class="form-label" for="adminPassword">Admin password</label><input type="password" class="form-control" id="adminPassword" name="adminPassword"></div></div></section>{% endif %}
+  <div class="save-bar"><div><strong>Ready to apply?</strong><div class="form-text">The server reloads its AI configuration after saving.</div></div><div class="d-flex gap-2"><a class="btn btn-outline-primary btn-lg" href="{% url 'hive:test_ai_connection' %}">Test selected AI</a><button type="submit" class="btn btn-primary btn-lg">Save configuration</button></div></div>
+</form>
+<script>document.getElementById('hive_edit').addEventListener('submit',function(event){let errors=[],host=document.getElementById('hostname').value.trim(),google=document.getElementById('googleapikey').value.trim();if(!host)errors.push('Hostname cannot be empty.');if(google){try{JSON.parse(google)}catch(e){errors.push('Google service-account key must be valid JSON.')}}{% if needs_admin %}if(!document.getElementById('adminUser').value.trim())errors.push('Admin user cannot be empty.');if(!document.getElementById('adminPassword').value.trim())errors.push('Admin password cannot be empty.');{% endif %}if(errors.length){event.preventDefault();alert('Setup cannot be saved:\n\n'+errors.join('\n'));}});</script>
 {% endblock %}

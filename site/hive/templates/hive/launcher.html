@@ -1,29 +1,13 @@
-{% extends 'base.html' %}
-{% load static %}
-{% block content %}
-<div class="moxheader"><a href="{% url 'hive:dashboard' %}"><img class="moximage" src="{% static 'hive/openmoxie_logo.svg' %}"></a>OpenMoxie<span class="moxversion">{{moxie_version}}</span></div>
-<div class="p-3">
-  <h2>Mission Launcher — {{object}}</h2>
-  <div class="alert {% if online %}alert-success{% else %}alert-warning{% endif %}">
-    Moxie is {% if online %}online. Launch sets the selected mission as the wake mission and sends Wake now.{% else %}offline. The selected mission will be saved for the next wake.{% endif %}
-  </div>
-  <h3>OpenMoxie Missions</h3>
-  <div class="row g-2 mb-4">
-  {% for mission in remote_modules %}
-    <div class="col-md-4"><form method="post" action="{% url 'hive:launch_mission' object.pk %}">
-      {% csrf_token %}<input type="hidden" name="module_id" value="{{mission.module_id}}"><input type="hidden" name="content_id" value="{{mission.content_id}}">
-      <button class="btn btn-primary w-100" type="submit">{{mission.name}}<br><small>{{mission.module_id}}/{{mission.content_id}}</small></button>
-    </form></div>
-  {% endfor %}
-  </div>
-  <h3>Built-in Robot Missions</h3>
-  <div class="row g-2">
-  {% for mission in built_in_modules %}
-    <div class="col-md-3"><form method="post" action="{% url 'hive:launch_mission' object.pk %}">
-      {% csrf_token %}<input type="hidden" name="module_id" value="{{mission.module_id}}">
-      <button class="btn btn-secondary w-100" type="submit">{{mission.module_id}}<br><small>{{mission.category|title}}</small></button>
-    </form></div>
-  {% endfor %}
-  </div>
-</div>
+{% extends 'base.html' %}{% block content %}
+<div class="page-heading"><div><div class="eyebrow">Activity library</div><h1>Choose what Moxie does next</h1><p>Every launch stops the current activity first, wakes Moxie if needed, and opens the selected activity.</p></div><div class="secondary-links"><a href="{% url 'hive:trivia_settings' object.pk %}">Configure trivia</a><a href="{% url 'hive:monitor' object.pk %}">Live monitor</a><a href="{% url 'hive:moxie_missions' object.pk %}">Progress settings</a></div></div>
+<div class="safety-banner mb-4"><strong>Voice controls:</strong> say “Play trivia,” “Talk about something else,” or “Go to sleep.” The buttons below also work when a mission is stuck.</div>
+
+<section class="mb-5"><div class="section-heading"><div><h2>OpenMoxie conversations and games</h2><p>Server-hosted activities that use your local configuration.</p></div></div><div class="vertical-activities">
+{% for mission in remote_modules %}<form class="activity-row" method="post" action="{% url 'hive:launch_mission' object.pk %}">{% csrf_token %}<input type="hidden" name="module_id" value="{{mission.module_id}}"><input type="hidden" name="content_id" value="{{mission.content_id}}"><div class="activity-copy"><span class="badge text-bg-primary">Server activity</span><h3>{{mission.name}}</h3><p>{{mission.description}}</p><span class="mission-code">{{mission.module_id}}/{{mission.content_id}}</span></div><div class="activity-action">{% if mission.module_id == 'OPENMOXIE_TRIVIA' %}<a class="btn btn-outline-primary" href="{% url 'hive:trivia_settings' object.pk %}">Configure</a>{% endif %}<button class="btn btn-primary" type="submit">Stop &amp; launch</button></div></form>{% endfor %}
+</div></section>
+
+<section><div class="section-heading"><div><h2>Built-in robot activities</h2><p>Activities already installed on Moxie. Availability can vary by robot software version.</p></div><label class="filter-control">Filter <select id="activity-filter" class="form-select"><option value="all">All categories</option><option value="movement">Movement</option><option value="regulation">Calm &amp; regulation</option><option value="creativity">Creativity</option><option value="playful_game">Games</option><option value="puzzle_game">Puzzles</option><option value="reading">Reading</option><option value="listening">Listening</option><option value="fun_tidbit">Quick fun</option></select></label></div><div class="vertical-activities" id="native-activities">
+{% for mission in built_in_modules %}<form class="activity-row" data-category="{{mission.category|lower}}" method="post" action="{% url 'hive:launch_mission' object.pk %}">{% csrf_token %}<input type="hidden" name="module_id" value="{{mission.module_id}}"><div class="activity-copy"><span class="badge text-bg-light">{{mission.category|title}}</span><h3>{{mission.title}}</h3><p>{{mission.description}}</p><span class="mission-code">{{mission.module_id}}</span></div><button class="btn btn-outline-primary activity-action" type="submit">Stop &amp; launch</button></form>{% endfor %}
+</div></section>
+<script>document.getElementById('activity-filter').addEventListener('change',function(){document.querySelectorAll('#native-activities [data-category]').forEach(row=>row.hidden=this.value!=='all'&&row.dataset.category!==this.value);});</script>
 {% endblock %}

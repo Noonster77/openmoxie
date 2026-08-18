@@ -30,6 +30,32 @@ RECOMMENDABLE_MODULES = [
 {'module_id': 'WHIMSY', 'category': 'FUN_TIDBIT'},
 ]
 
+MISSION_DESCRIPTIONS = {
+    'AFFIRM': ('Positive affirmations', 'Practice kind, encouraging thoughts.'),
+    'AB': ('Animal breathing', 'Calming breaths inspired by animals.'),
+    'ANIMALEXERCISE': ('Animal exercise', 'Move and stretch like different animals.'),
+    'BODYSCAN': ('Body scan', 'A short guided relaxation activity.'),
+    'RDL': ('Riddles', 'Hear and solve a playful riddle.'),
+    'BREATHINGSHAPES': ('Shape breathing', 'Follow shapes while practicing slow breathing.'),
+    'COMPOSING': ('Make music', 'Create a simple musical idea together.'),
+    'FACES': ('Face feelings', 'Guess and talk about facial expressions.'),
+    'FF': ('Fun fact', 'Learn one surprising age-appropriate fact.'),
+    'GUIDEDVIS': ('Guided imagination', 'Relax with a guided visualization.'),
+    'JOKE': ('Joke time', 'Hear a child-friendly joke.'),
+    'JUKEBOX': ('Jukebox', 'Listen and move along with music.'),
+    'MENTORSAYS': ('Moxie says', 'A listening-and-movement game like Simon Says.'),
+    'NONSENSE': ('Nonsense words', 'Play with funny made-up words and sounds.'),
+    'DANCE': ('Dance break', 'Follow a short movement and dance activity.'),
+    'DRAW': ('Drawing time', 'Use imagination in a guided drawing activity.'),
+    'STORYTELLING': ('Tell a story', 'Create and tell a story with Moxie.'),
+    'PASSWORDGAME': ('Password game', 'Solve clues in a word guessing game.'),
+    'READ': ('Read together', 'Read a physical book aloud with Moxie.'),
+    'SCAVENGERHUNT': ('Scavenger hunt', 'Find safe household objects from spoken clues.'),
+    'STORY': ('Story time', 'Listen to a story told by Moxie.'),
+    'AUDMED': ('Audio meditation', 'A quiet guided mindfulness exercise.'),
+    'WHIMSY': ('Something silly', 'A short, playful surprise activity.'),
+}
+
 TNT_CIDS = 9
 SYSTEMSCHECK_CIDS = 4
 

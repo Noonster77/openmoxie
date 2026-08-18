@@ -9,6 +9,7 @@ and state.
 import json
 import logging
 import deepmerge
+from copy import deepcopy
 from django.db import connections
 from django.db import transaction
 from ..models import HiveConfiguration, MoxieDevice, MoxieSchedule, MentorBehavior, PersistentData
@@ -51,7 +52,7 @@ DEFAULT_ROBOT_CONFIG = {
   "audio_wake_set": "off",
   "timezone_id": "America/Los_Angeles",
   "child_pii": {
-      "nickname": "Pat",
+      "nickname": "Friend",
       "input_speed": 0.0
   }
 }
@@ -153,6 +154,10 @@ class RobotData:
         self._robot_map[robot_id]["config"] = self.build_config(device, curr_cfg)
         # load our robot's persistent data
         persistent_data, persistent_data_created = PersistentData.objects.get_or_create(device=device, defaults={'data': {}})
+        nickname = self._robot_map[robot_id]["config"].get('child_pii', {}).get('nickname')
+        if nickname and 'active_speaker' not in persistent_data.data:
+            persistent_data.data['active_speaker'] = nickname
+            persistent_data.save(update_fields=['data'])
         self._robot_map[robot_id]["persistent_data"] = persistent_data
         device.save()
 
@@ -187,6 +192,16 @@ class RobotData:
             self._robot_map[device.device_id]["config"] = self.get_config_for_device(device)
             return True
         return False
+
+    def schedule_update_live(self, device):
+        """Refresh the schedule cached for a connected robot after a UI change."""
+        if self.device_online(device.device_id):
+            self._robot_map[device.device_id]["schedule"] = (
+                deepcopy(device.schedule.schedule) if device.schedule else DEFAULT_SCHEDULE
+            )
+            logger.info('Updated live schedule for %s', device.device_id)
+            return True
+        return False
     
     # Get the cached config record for a robot
     def get_config(self, robot_id):
@@ -208,9 +223,11 @@ class RobotData:
             device = MoxieDevice.objects.get(device_id=robot_id)
             data["conversation_profile"] = device.conversation_profile
             data["conversation_memory_enabled"] = device.conversation_memory_enabled
+            data["speaker_names"] = device.speaker_names
         except MoxieDevice.DoesNotExist:
             data["conversation_profile"] = ""
             data["conversation_memory_enabled"] = False
+            data["speaker_names"] = []
         return data
 
     def save_persistent_data(self, robot_id):

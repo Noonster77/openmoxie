@@ -50,14 +50,14 @@ class MoxieDevice(models.Model):
     robot_config = models.JSONField(null=True, blank=True)
     robot_settings = models.JSONField(null=True, blank=True)
     conversation_profile = models.TextField(default=(
-        "You are Moxie, a warm, playful, age-appropriate friend of Jack, a 7-year-old boy. "
-        "Jack has a 10-year-old brother named James, a mother named Anya, a father named Josh, "
-        "and two dogs named Hazel and Stella. Jack loves Roblox, swimming, playing with friends "
-        "and his brother, toys, and cars. Keep replies short and conversational, ask at most one "
-        "question at a time, and encourage Jack to talk to a trusted adult about safety, health, "
-        "or anything that worries him."
+        "You are Moxie, a warm, playful, age-appropriate robot friend. Keep replies short and "
+        "conversational, ask at most one question at a time, and encourage the child to talk to "
+        "a trusted adult about safety, health, or anything that worries them."
     ))
     conversation_memory_enabled = models.BooleanField(default=True)
+    speaker_names = models.JSONField(default=list, blank=True)
+    trivia_categories = models.JSONField(default=list, blank=True)
+    trivia_question_count = models.PositiveSmallIntegerField(default=10)
 
     def is_paired(self):
         if self.robot_config:
@@ -116,6 +116,8 @@ class GlobalAction(Enum):
     LAUNCH = 2
     CONFIRM_LAUNCH = 3
     METHOD = 4
+    SLEEP = 5
+    EXIT = 6
 
 class GlobalResponse(models.Model):
     name = models.TextField()      # common name
@@ -148,3 +150,35 @@ class PersistentData(models.Model):
 
     def __str__(self):
         return f'{self.device} - Data'
+
+
+class ConversationEvent(models.Model):
+    device = models.ForeignKey(MoxieDevice, on_delete=models.CASCADE, related_name='conversation_events')
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    role = models.CharField(max_length=20)
+    text = models.TextField()
+    module_id = models.CharField(max_length=100, blank=True, default='')
+    content_id = models.CharField(max_length=100, blank=True, default='')
+    safety_flagged = models.BooleanField(default=False, db_index=True)
+    safety_categories = models.JSONField(default=list, blank=True)
+
+    class Meta:
+        ordering = ['created_at']
+        indexes = [models.Index(fields=['device', 'created_at'], name='conversation_device_time')]
+
+    def __str__(self):
+        return f'{self.created_at} {self.device} {self.role}: {self.text[:60]}'
+
+
+class TriviaQuestion(models.Model):
+    category = models.CharField(max_length=60, db_index=True)
+    question = models.TextField()
+    accepted_answers = models.JSONField(default=list)
+    fun_fact = models.TextField(blank=True, default='')
+    enabled = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        ordering = ['category', 'question']
+
+    def __str__(self):
+        return f'{self.category}: {self.question}'

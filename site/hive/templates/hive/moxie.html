@@ -1,53 +1,28 @@
-{% extends 'base.html' %}
-{% load static %}
-{% block content %}
-<div class="moxheader"><a href="{% url 'hive:dashboard' %}"><img class="moximage" src="{% static 'hive/openmoxie_logo.svg' %}"></a>OpenMoxie<span class="moxversion">{{moxie_version}}</span></div>
-<div class="p-3">
-<h2>Moxie</h2>
-<div class="moxie-window">
-  <form id="moxie_edit" action="{% url 'hive:moxie_edit' object.pk %}" method="post">
-  {% csrf_token %}
-  <table class="table">
-    <tr><th>Name</th><td><input type="text" class="form-control" name="moxie_name" value="{{object.name}}"></td></tr>
-    <tr><th>Device ID</th><td>{{object.device_id}}</td></tr>
-    <tr><th>Device Pairing</th><td>
-      <select name="pairing_status">
-          <option value="paired" {% if object.is_paired %}selected{% endif %}>Paired/Allowed</option>
-          <option value="unpairing" {% if not object.is_paired %}selected{% endif %}>Unpaired/Blocked</option>
-      </select>
-    </td></tr>
-    <tr><th>Person's Name</th><td><input type="text" class="form-control" name="nickname" value="{{active_config.child_pii.nickname}}"><div class="form-text">The name Moxie uses for the person speaking with her.</div></td></tr>
-    <tr><th>Conversation Profile</th><td>
-      <textarea class="form-control" name="conversation_profile" rows="7">{{object.conversation_profile}}</textarea>
-      <div class="form-text">Server-only instructions supplied to the selected chat model. These are not installed on the robot.</div>
-    </td></tr>
-    <tr><th>Remember Conversations</th><td>
-      <input class="form-check-input" type="checkbox" name="conversation_memory_enabled" {% if object.conversation_memory_enabled %}checked{% endif %}>
-      <span class="ms-2">Include the most recent 10 exchanges in future conversations.</span>
-    </td></tr>
-    <tr><th>Schedule</th><td>
-        <select name="schedule">
-            {% for schedule in schedules %}
-              <option value="{{ schedule.id }}" {% if object.schedule_id == schedule.id %}selected{% endif %}>
-                {{ schedule.name }}
-              </option>
-            {% endfor %}
-          </select>
-    </td></tr>
-    <tr><th>OTA Version</th><td>{{object.state.robot_firmware_version}}</td></tr>
-    <tr><th>Last Connect</th><td>{{object.last_connect}}</td></tr>
-    <tr><th>Last Disconnect</th><td>{{object.last_disconnect}}</td></tr>
-    <tr><th>Battery</th><td>{{object.state.battery_level}}</td></tr>
-    <tr><th>Screen Brightness</th><td><input type="range" min="0.1" max="1.0" step="0.1" name="screen_brightness" value="{{active_config.screen_brightness}}"></td></tr>
-    <tr><th>Audio Volume</th><td><input type="range" min="0.1" max="1.0" step="0.1" name="audio_volume" value="{{active_config.audio_volume}}"></td></tr>
-    <tr><th>Mode</th><td>{{object.state.mode}}</td></tr>
-  </table>
-  <button type="submit" class="btn btn-primary">Save</button>
-  <a class="btn btn-secondary" href="{% url 'hive:moxie_launcher' object.pk %}">Mission Launcher</a>
+{% extends 'base.html' %}{% block content %}
+<div class="page-heading"><div><div class="eyebrow">Robot profile</div><h1>{{object.name|default:'Moxie'}} settings</h1><p>Personalize who Moxie talks with and manage this robot.</p></div><div class="secondary-links"><a href="{% url 'hive:monitor' object.pk %}">Live monitor</a><a href="{% url 'hive:moxie_launcher' object.pk %}">Mission library</a></div></div>
+<form id="moxie_edit" action="{% url 'hive:moxie_edit' object.pk %}" method="post">{% csrf_token %}
+  <div class="settings-grid">
+    <section class="panel settings-card"><span class="step-chip">1</span><h2 class="panel-title">Names &amp; speakers</h2>
+      <label class="form-label" for="moxie_name">Robot display name</label><input id="moxie_name" type="text" class="form-control" name="moxie_name" value="{{object.name|default:''}}" placeholder="Moxie">
+      <label class="form-label" for="nickname">Primary person's name</label><input id="nickname" type="text" class="form-control" name="nickname" value="{{active_config.child_pii.nickname}}"><div class="form-text">The default name Moxie uses when a conversation starts.</div>
+      <label class="form-label" for="speaker_names">Known speakers</label><textarea id="speaker_names" class="form-control" name="speaker_names" rows="4">{% for name in object.speaker_names %}{{name}}{% if not forloop.last %}
+{% endif %}{% endfor %}</textarea><div class="form-text">One name per line. Say “I'm Name” or “This is Name” to switch the active speaker.</div>
+    </section>
+    <section class="panel settings-card"><span class="step-chip">2</span><h2 class="panel-title">Friend personality</h2>
+      <label class="form-label" for="conversation_profile">Conversation profile</label><textarea id="conversation_profile" class="form-control" name="conversation_profile" rows="11">{{object.conversation_profile}}</textarea><div class="form-text">Add family names, interests, age, tone, and boundaries here. These instructions stay on the server.</div>
+      <div class="form-check mt-3"><input class="form-check-input" id="remember" type="checkbox" name="conversation_memory_enabled" {% if object.conversation_memory_enabled %}checked{% endif %}><label class="form-check-label fw-bold" for="remember">Remember recent conversations</label><div class="form-text">Includes the most recent 10 exchanges in future chats.</div></div>
+    </section>
+    <section class="panel settings-card"><span class="step-chip">3</span><h2 class="panel-title">Robot behavior</h2>
+      <label class="form-label" for="pairing_status">Pairing permission</label><select id="pairing_status" class="form-select" name="pairing_status"><option value="paired" {% if object.is_paired %}selected{% endif %}>Paired / allowed</option><option value="unpairing" {% if not object.is_paired %}selected{% endif %}>Unpaired / blocked</option></select>
+      <label class="form-label" for="schedule">Schedule</label><select id="schedule" class="form-select" name="schedule">{% for schedule in schedules %}<option value="{{schedule.id}}" {% if object.schedule_id == schedule.id %}selected{% endif %}>{{schedule.name}}</option>{% endfor %}</select>
+      <label class="form-label" for="audio_volume">Audio volume</label><input id="audio_volume" class="form-range" type="range" min="0.1" max="1.0" step="0.1" name="audio_volume" value="{{active_config.audio_volume}}">
+      <label class="form-label" for="screen_brightness">Screen brightness</label><input id="screen_brightness" class="form-range" type="range" min="0.1" max="1.0" step="0.1" name="screen_brightness" value="{{active_config.screen_brightness}}">
+    </section>
+    <section class="panel settings-card"><span class="step-chip">4</span><h2 class="panel-title">Device status</h2>
+      <dl class="status-list"><div><dt>Device ID</dt><dd>{{object.device_id}}</dd></div><div><dt>Mode</dt><dd>{{object.state.mode|default:'connecting'}}</dd></div><div><dt>Battery</dt><dd>{{object.state.battery_level|default:'Unknown'}}</dd></div><div><dt>Firmware</dt><dd>{{object.state.robot_firmware_version|default:'Unknown'}}</dd></div><div><dt>Last connected</dt><dd>{{object.last_connect|default:'Never'}}</dd></div></dl>
+    </section>
+  </div>
+  <div class="save-bar"><div><strong>Save profile and robot settings</strong><div class="form-text">Changes are sent to Moxie when connected.</div></div><button type="submit" class="btn btn-primary btn-lg">Save changes</button></div>
 </form>
-<form class="mt-2" method="post" action="{% url 'hive:clear_conversation_memory' object.pk %}">
-  {% csrf_token %}<button class="btn btn-outline-danger" type="submit">Clear Conversation Memory</button>
-</form>
-</div>
-</div>
+<form class="mt-3" method="post" action="{% url 'hive:clear_conversation_memory' object.pk %}">{% csrf_token %}<button class="btn btn-outline-danger" type="submit">Clear conversation memory</button></form>
 {% endblock %}

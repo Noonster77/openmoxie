@@ -68,6 +68,10 @@ class Volley:
         return self._robot_data.get("conversation_memory_enabled", False)
 
     @property
+    def speaker_names(self):
+        return self._robot_data.get("speaker_names", [])
+
+    @property
     def entities(self):
         return self._local_data.get("entities",[])
     

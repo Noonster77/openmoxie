@@ -110,6 +110,12 @@ class GlobalResponses:
             elif gr.action == GlobalAction.METHOD.value:
                 logger.info(f'Loading GlobalResponse CUSTOM METHOD type {gr}')
                 self._patterns.append(MethodPattern(gr))
+            elif gr.action == GlobalAction.SLEEP.value:
+                logger.info(f'Loading GlobalResponse SLEEP type {gr}')
+                self._patterns.append(ActionPattern(gr, action="sleep"))
+            elif gr.action == GlobalAction.EXIT.value:
+                logger.info(f'Loading GlobalResponse EXIT type {gr}')
+                self._patterns.append(ActionPattern(gr, action="exit_module"))
             else:
                 logger.warning(f"Unsupported type {gr.action} in GlobalResponse {gr.name}")
 
