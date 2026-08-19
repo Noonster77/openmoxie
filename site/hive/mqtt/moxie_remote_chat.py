@@ -18,7 +18,7 @@ import logging
 import threading
 from datetime import datetime
 from .global_responses import GlobalResponses
-from .conversations import ChatSession, SinglePromptDBChatSession, TriviaChatSession
+from .conversations import ChatSession, HomeworkChatSession, SinglePromptDBChatSession, TriviaChatSession
 from .volley import Volley
 from .conversation_log import record_conversation
 
@@ -61,6 +61,28 @@ class RemoteChat:
         with self._control_lock:
             return self._pending_controls.pop(device_id, None)
 
+    def clear_control(self, device_id, action=None):
+        """Discard a queued fallback after the robot confirms the action another way."""
+        with self._control_lock:
+            control = self._pending_controls.get(device_id)
+            if control and (action is None or control['action'] == action):
+                return self._pending_controls.pop(device_id)
+        return None
+
+    def _clear_completed_launch(self, device_id, request):
+        """An arrival from the requested module proves an immediate launch succeeded."""
+        with self._control_lock:
+            control = self._pending_controls.get(device_id)
+            if not control or control['action'] != 'launch':
+                return
+            if request.get('module_id') != control.get('module_id'):
+                return
+            requested_content = control.get('content_id')
+            if requested_content and request.get('content_id') != requested_content:
+                return
+            self._pending_controls.pop(device_id, None)
+        logger.info('Cleared delivered launch fallback for %s', device_id)
+
     def _apply_control(self, device_id, volley):
         control = self._take_control(device_id)
         if not control:
@@ -91,6 +113,8 @@ class RemoteChat:
             for content_id in cid_list:
                 if chat.module_id == 'OPENMOXIE_TRIVIA':
                     new_modules[f'{chat.module_id}/{content_id}'] = { 'xtor': TriviaChatSession, 'params': {} }
+                elif chat.module_id == 'OPENMOXIE_HOMEWORK':
+                    new_modules[f'{chat.module_id}/{content_id}'] = { 'xtor': HomeworkChatSession, 'params': { 'pk': chat.pk } }
                 else:
                     new_modules[f'{chat.module_id}/{content_id}'] = { 'xtor': SinglePromptDBChatSession, 'params': { 'pk': chat.pk } }
                 logger.debug(f'Registering {chat.module_id}/{content_id}')
@@ -207,6 +231,7 @@ class RemoteChat:
             logger.info(f"RemoteChatRequest\n{rcr}")
         id = rcr.get('module_id', '') + '/' + rcr.get('content_id', '')
         cmd = rcr.get('command')
+        self._clear_completed_launch(device_id, rcr)
         if _LOG_NOTIFY_RCR and cmd == 'notify':
             rcr['_device_id'] = device_id
             self.log_notify(rcr)

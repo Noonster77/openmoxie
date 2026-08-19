@@ -380,6 +380,9 @@ class MoxieServer:
     # NOTE: Called from worker thread pool
     def ingest_robot_state(self, device_id, statedata):
         self._robot_data.put_state(device_id, statedata)
+        if statedata.get('mode') == 'sleep':
+            if self._remote_chat.clear_control(device_id, action='sleep'):
+                logger.info('Cleared delivered sleep fallback for %s', device_id)
 
     # NOTE: Called from worker thread pool
     def provide_mentor_behaviors(self, req_id, device_id):

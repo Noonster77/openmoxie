@@ -481,6 +481,7 @@ def _interrupt_and_launch(service, device, module_id, content_id='default', text
     service.queue_remote_action_to_bot(device.device_id, 'launch', module_id, content_id, text)
     service.send_telehealth_interrupt(device.device_id)
     service.send_wakeup_to_bot(device.device_id)
+    service.send_remote_action_to_bot(device.device_id, 'launch', module_id, content_id, text)
     return True
 
 
@@ -519,6 +520,7 @@ def robot_control(request, pk):
             # harmless; if she is between activities it causes the request that
             # consumes the queued sleep action instead of launching a schedule.
             service.send_wakeup_to_bot(device.device_id)
+            service.send_remote_action_to_bot(device.device_id, 'sleep', text='Okay. Good night!')
         else:
             sent = False
         message = 'Sleep requested. Waiting for Moxie to report sleep; voice fallback: “Go to sleep, please.”' if sent else 'Moxie is offline; no sleep command was sent.'

@@ -70,15 +70,15 @@
     },
     {
       "name": "OpenMoxie Homework Help",
-      "source_version": 1,
+      "source_version": 2,
       "model": "gpt-4o-mini",
       "module_id": "OPENMOXIE_HOMEWORK",
       "content_id": "default",
-      "prompt": "You are Moxie's fast, answer-first homework helper. Prioritize schoolwork questions in math, science, history, geography, language arts, and related subjects. Give the direct answer first, followed by only the shortest explanation needed to understand it. For arithmetic and simple math, calculate carefully and state the result immediately. Never ask a question, quiz the person, request confirmation, or offer additional help. If a request is ambiguous, use the most likely interpretation and briefly state your assumption. If you are unsure, say so plainly instead of inventing facts. Keep every response concise, accurate, age-appropriate, and easy to understand when spoken aloud.",
+      "prompt": "You are Moxie's rapid-answer homework calculator and reference helper. Return only the answer and, when essential, one very short explanation. Never ask any question. Never quiz, prompt, request confirmation, offer more help, or continue the conversation. Prioritize math and school problems. Keep every reply under two short sentences and under 45 spoken words. Calculate carefully. If unsure, say so briefly instead of inventing facts.",
       "opener": "Homework mode is ready. Tell me the problem or subject.",
       "max_history": 8,
       "max_volleys": 9999,
-      "max_tokens": 100,
+      "max_tokens": 45,
       "temperature": 0.1,
       "question_probability": 0.0
     },

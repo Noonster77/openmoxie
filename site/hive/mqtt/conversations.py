@@ -2,6 +2,7 @@
 CONVERSATIONS - Framework for Moxie remote applications / conversations
 '''
 import logging
+import ast
 import copy
 import random
 import re
@@ -312,6 +313,154 @@ class SinglePromptDBChatSession(SingleContextChatSession):
                                  notify_handler=loc.get('notify_handler'))
             except Exception as e:
                 logger.error(f"Error loading code for chat session: {e}")
+
+
+class HomeworkChatSession(SinglePromptDBChatSession):
+    """Answer-first homework help with a zero-latency path for basic arithmetic."""
+
+    _UNITS = {
+        'zero': 0, 'one': 1, 'two': 2, 'three': 3, 'four': 4,
+        'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9,
+        'ten': 10, 'eleven': 11, 'twelve': 12, 'thirteen': 13,
+        'fourteen': 14, 'fifteen': 15, 'sixteen': 16,
+        'seventeen': 17, 'eighteen': 18, 'nineteen': 19,
+    }
+    _TENS = {
+        'twenty': 20, 'thirty': 30, 'forty': 40, 'fifty': 50,
+        'sixty': 60, 'seventy': 70, 'eighty': 80, 'ninety': 90,
+    }
+    _BINARY_OPERATORS = {
+        ast.Add: lambda left, right: left + right,
+        ast.Sub: lambda left, right: left - right,
+        ast.Mult: lambda left, right: left * right,
+        ast.Div: lambda left, right: left / right,
+        ast.Mod: lambda left, right: left % right,
+        ast.Pow: lambda left, right: left ** right,
+    }
+
+    def __init__(self, pk):
+        super().__init__(pk)
+        self._max_tokens = min(self._max_tokens, 45)
+        self._temperature = 0.1
+        self._question_probability = 0.0
+
+    @classmethod
+    def _words_to_number(cls, text):
+        words = [word for word in text.strip().replace('-', ' ').split() if word != 'and']
+        if not words:
+            return None
+        if all(re.fullmatch(r'\d+(?:\.\d+)?', word) for word in words):
+            return ''.join(words)
+        if 'point' in words:
+            point = words.index('point')
+            whole = cls._words_to_number(' '.join(words[:point])) or '0'
+            decimals = [str(cls._UNITS[word]) for word in words[point + 1:] if word in cls._UNITS and cls._UNITS[word] < 10]
+            if len(decimals) != len(words[point + 1:]) or not decimals:
+                return None
+            return f'{whole}.{"".join(decimals)}'
+        total = current = 0
+        for word in words:
+            if word in cls._UNITS:
+                current += cls._UNITS[word]
+            elif word in cls._TENS:
+                current += cls._TENS[word]
+            elif word == 'hundred':
+                current = (current or 1) * 100
+            elif word == 'thousand':
+                total += (current or 1) * 1000
+                current = 0
+            else:
+                return None
+        return str(total + current)
+
+    @classmethod
+    def _normalize_expression(cls, speech):
+        expression = speech.lower().strip().replace(',', '').replace('×', '*').replace('÷', '/')
+        expression = re.sub(r'^(?:moxie[, ]+)?(?:what(?: is|\'s)|calculate|compute|solve|the answer to)\s+', '', expression)
+        replacements = (
+            (r'raised to the power of|to the power of', '**'),
+            (r'multiplied by', '*'), (r'divided by', '/'),
+            (r'plus', '+'), (r'minus', '-'), (r'times', '*'),
+        )
+        for pattern, replacement in replacements:
+            expression = re.sub(rf'\b(?:{pattern})\b', replacement, expression)
+        expression = expression.rstrip(' ?.=')
+        parts = re.split(r'(\*\*|[+\-*/()%])', expression)
+        normalized = []
+        for part in parts:
+            if not part or re.fullmatch(r'\s*(?:\*\*|[+\-*/()%])\s*', part):
+                normalized.append(part.strip())
+                continue
+            number = cls._words_to_number(part)
+            if number is None:
+                return None
+            normalized.append(number)
+        result = ''.join(normalized)
+        return result if re.search(r'[+\-*/%]', result) else None
+
+    @classmethod
+    def _evaluate_expression(cls, node):
+        if isinstance(node, ast.Expression):
+            return cls._evaluate_expression(node.body)
+        if isinstance(node, ast.Constant) and type(node.value) in (int, float):
+            return node.value
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub)):
+            value = cls._evaluate_expression(node.operand)
+            return value if isinstance(node.op, ast.UAdd) else -value
+        if isinstance(node, ast.BinOp) and type(node.op) in cls._BINARY_OPERATORS:
+            left = cls._evaluate_expression(node.left)
+            right = cls._evaluate_expression(node.right)
+            if isinstance(node.op, ast.Pow) and abs(right) > 10:
+                raise ValueError('Exponent is too large')
+            value = cls._BINARY_OPERATORS[type(node.op)](left, right)
+            if abs(value) > 1e15:
+                raise ValueError('Result is too large')
+            return value
+        raise ValueError('Unsupported arithmetic expression')
+
+    @classmethod
+    def solve_arithmetic(cls, speech):
+        expression = cls._normalize_expression(speech)
+        if not expression:
+            return None
+        try:
+            value = cls._evaluate_expression(ast.parse(expression, mode='eval'))
+        except ZeroDivisionError:
+            return 'That is undefined because division by zero is not allowed.'
+        except (SyntaxError, TypeError, ValueError, OverflowError):
+            return None
+        if isinstance(value, float):
+            value = round(value, 8)
+            rendered = str(int(value)) if value.is_integer() else f'{value:.8f}'.rstrip('0').rstrip('.')
+        else:
+            rendered = str(value)
+        return f'{rendered}.'
+
+    @staticmethod
+    def concise_answer(text):
+        sentences = re.split(r'(?<=[.!?])\s+|\n+', (text or '').strip())
+        answer = []
+        for sentence in sentences:
+            lowered = sentence.lower().strip()
+            if not sentence or '?' in sentence:
+                continue
+            if re.match(r'^(?:would you|do you|can i|shall i|let me know|i can also|feel free|ask me)', lowered):
+                continue
+            answer.append(sentence)
+            if len(answer) == 2:
+                break
+        concise = ' '.join(answer) or "I don't have a reliable answer."
+        words = concise.split()
+        if len(words) > 45:
+            concise = ' '.join(words[:45]).rstrip(',:;-') + '.'
+        return concise.replace('?', '.')
+
+    def next_response(self, speech, context):
+        arithmetic = self.solve_arithmetic(speech)
+        if arithmetic is not None:
+            return arithmetic, self.overflow()
+        response, overflow = super().next_response(speech, context)
+        return self.concise_answer(response), overflow
 
 
 class TriviaChatSession(ChatSession):

@@ -12,7 +12,7 @@ from .models import ConversationEvent, GlobalResponse, HiveConfiguration, MoxieD
 from .mqtt.moxie_server import MoxieServer
 from .mqtt.moxie_remote_chat import RemoteChat
 from .mqtt.robot_data import RobotData
-from .mqtt.conversations import ChatSession, SingleContextChatSession, TriviaChatSession
+from .mqtt.conversations import ChatSession, HomeworkChatSession, SingleContextChatSession, TriviaChatSession
 from .mqtt.volley import Volley
 from .mqtt.conversation_log import record_conversation, safety_redirect
 from .mqtt.global_responses import GlobalResponses
@@ -157,6 +157,10 @@ class WakeControlTests(TestCase):
             'd_wake', 'launch', 'OPENMOXIE_TRIVIA', 'default',
             'Trivia time! Get your thinking cap ready.',
         )
+        service.send_remote_action_to_bot.assert_called_once_with(
+            'd_wake', 'launch', 'OPENMOXIE_TRIVIA', 'default',
+            'Trivia time! Get your thinking cap ready.',
+        )
 
     @patch("hive.views.get_instance")
     def test_homework_control_launches_answer_first_module(self, get_instance):
@@ -173,6 +177,10 @@ class WakeControlTests(TestCase):
             'd_wake', 'launch', 'OPENMOXIE_HOMEWORK', 'default',
             'Homework mode is ready. Tell me the problem or subject.',
         )
+        service.send_remote_action_to_bot.assert_called_once_with(
+            'd_wake', 'launch', 'OPENMOXIE_HOMEWORK', 'default',
+            'Homework mode is ready. Tell me the problem or subject.',
+        )
 
     @patch("hive.views.get_instance")
     def test_sleep_queues_router_action_interrupts_and_nudges_robot(self, get_instance):
@@ -186,6 +194,29 @@ class WakeControlTests(TestCase):
         service.queue_remote_action_to_bot.assert_called_once_with('d_wake', 'sleep', text='Okay. Good night!')
         service.send_telehealth_interrupt.assert_called_once_with('d_wake')
         service.send_wakeup_to_bot.assert_called_once_with('d_wake')
+        service.send_remote_action_to_bot.assert_called_once_with(
+            'd_wake', 'sleep', text='Okay. Good night!'
+        )
+
+    @patch("hive.views.get_instance")
+    def test_chat_style_dashboard_controls_all_send_immediately(self, get_instance):
+        service = get_instance.return_value
+        service.robot_data.return_value.device_online.return_value = True
+        for action in ('wake', 'chat', 'stop'):
+            with self.subTest(action=action):
+                service.reset_mock()
+                service.robot_data.return_value.device_online.return_value = True
+                response = self.client.post(
+                    reverse('hive:robot_control', args=[self.device.pk]),
+                    {'action': action},
+                )
+
+                self.assertEqual(response.status_code, 302)
+                service.send_remote_action_to_bot.assert_called_once()
+                self.assertEqual(
+                    service.send_remote_action_to_bot.call_args.args[2],
+                    'OPENMOXIE_CHAT',
+                )
 
 
 class LocalAIAndMissionTests(TestCase):
@@ -226,6 +257,44 @@ class LocalAIAndMissionTests(TestCase):
 
         self.assertIn('Do not ask the person any questions', context)
         self.assertNotIn('End this response with one short, friendly question', context)
+
+    def test_homework_solves_spoken_arithmetic_without_ai(self):
+        homework = SinglePromptChat.objects.get(
+            module_id='OPENMOXIE_HOMEWORK', content_id='default'
+        )
+        session = HomeworkChatSession(homework.pk)
+        volley = Volley.request_from_speech(
+            'What is fourteen plus eighteen?', device_id='test',
+            module_id='OPENMOXIE_HOMEWORK', content_id='default',
+        )
+
+        with patch('hive.mqtt.conversations.chat_completion') as completion:
+            session.handle_volley(volley)
+
+        self.assertEqual(volley.response['output']['text'], '32.')
+        completion.assert_not_called()
+
+    def test_homework_removes_questions_and_extra_offers(self):
+        homework = SinglePromptChat.objects.get(
+            module_id='OPENMOXIE_HOMEWORK', content_id='default'
+        )
+        session = HomeworkChatSession(homework.pk)
+        volley = Volley.request_from_speech(
+            'Explain photosynthesis.', device_id='test',
+            module_id='OPENMOXIE_HOMEWORK', content_id='default',
+        )
+
+        with patch('hive.mqtt.conversations.chat_completion', return_value=(
+            'Plants use sunlight to turn water and carbon dioxide into sugar. '
+            'Would you like another example? I can also explain chlorophyll.'
+        )):
+            session.handle_volley(volley)
+
+        self.assertEqual(
+            volley.response['output']['text'],
+            'Plants use sunlight to turn water and carbon dioxide into sugar.',
+        )
+        self.assertNotIn('?', volley.response['output']['text'])
 
     def test_trivia_scores_correct_answer_and_asks_next_question(self):
         device = MoxieDevice.objects.create(device_id='test', trivia_categories=['Test'])
@@ -279,7 +348,7 @@ class ParentSafetyAndVoiceTests(TestCase):
     def test_start_homework_voice_command_returns_launch_action(self):
         responses = GlobalResponses()
         responses.update_from_database()
-        volley = Volley.request_from_speech('Moxie, start homework mode', device_id=self.device.device_id)
+        volley = Volley.request_from_speech('Moxie homework mode', device_id=self.device.device_id)
 
         payload = responses.check_global(volley)()
 
@@ -306,6 +375,19 @@ class ParentSafetyAndVoiceTests(TestCase):
         self.assertTrue(applied)
         self.assertEqual(volley.response['response_action']['action'], 'sleep')
         self.assertNotIn('stale answer', volley.response['output']['text'])
+
+    def test_delivered_launch_clears_queued_fallback(self):
+        remote = RemoteChat(MagicMock())
+        remote.queue_control(
+            self.device.device_id, 'launch',
+            'OPENMOXIE_HOMEWORK', 'default', 'Homework mode is ready.',
+        )
+
+        remote._clear_completed_launch(self.device.device_id, {
+            'module_id': 'OPENMOXIE_HOMEWORK', 'content_id': 'default',
+        })
+
+        self.assertIsNone(remote._take_control(self.device.device_id))
 
     def test_configured_speaker_can_identify_themselves(self):
         responses = GlobalResponses()
