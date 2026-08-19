@@ -1,9 +1,42 @@
-{% extends 'base.html' %}{% block content %}
-<div class="page-heading"><div><div class="eyebrow">Trivia workshop</div><h1>Build the question mix</h1><p>Choose categories, set game length, and edit every question Moxie can ask.</p></div><div class="secondary-links"><a href="{% url 'hive:moxie_launcher' object.pk %}">Activity library</a><a href="{% url 'hive:monitor' object.pk %}">Live monitor</a></div></div>
-{% if request.GET.saved %}<div class="alert alert-success">{{request.GET.saved}}</div>{% endif %}
-<section class="panel mb-4"><h2 class="panel-title">Game options</h2><form method="post" action="{% url 'hive:trivia_configure' object.pk %}">{% csrf_token %}<input type="hidden" name="action" value="save_options"><div class="category-picker">{% for category in categories %}<label><input type="checkbox" name="categories" value="{{category}}" {% if not object.trivia_categories or category in object.trivia_categories %}checked{% endif %}> <span>{{category}}</span></label>{% endfor %}</div><div class="form-row mt-3"><div><label class="form-label fw-bold" for="question_count">Questions per game</label><input class="form-control" id="question_count" type="number" name="question_count" min="3" max="20" value="{{object.trivia_question_count}}"></div><div class="d-flex align-items-end"><button class="btn btn-primary w-100" type="submit">Save game options</button></div></div><div class="form-text mt-2">If no categories are selected, Moxie mixes all enabled categories.</div></form></section>
-<section class="panel mb-4"><h2 class="panel-title">Add a question</h2><form method="post" action="{% url 'hive:trivia_configure' object.pk %}">{% csrf_token %}<input type="hidden" name="action" value="save_question"><div class="trivia-edit-grid"><input class="form-control" name="category" placeholder="Category" required><input class="form-control" name="question" placeholder="Question spoken by Moxie" required><input class="form-control" name="answers" placeholder="Accepted answers, separated by commas" required><input class="form-control" name="fun_fact" placeholder="Optional fun fact after the answer"><label class="form-check"><input class="form-check-input" type="checkbox" name="enabled" checked> Enabled</label><button class="btn btn-primary" type="submit">Add question</button></div></form></section>
-<div class="vertical-activities">
-{% for item in questions %}<details class="activity-row"><summary><div><span class="badge text-bg-light">{{item.category}}</span><strong>{{item.question}}</strong><span class="device-meta">Answers: {{item.accepted_answers|join:', '}}{% if not item.enabled %} • Disabled{% endif %}</span></div><span class="btn btn-sm btn-outline-primary">Edit</span></summary><form method="post" action="{% url 'hive:trivia_configure' object.pk %}" class="trivia-edit-grid mt-3">{% csrf_token %}<input type="hidden" name="action" value="save_question"><input type="hidden" name="question_id" value="{{item.pk}}"><input class="form-control" name="category" value="{{item.category}}" required><input class="form-control" name="question" value="{{item.question}}" required><input class="form-control" name="answers" value="{{item.accepted_answers|join:', '}}" required><input class="form-control" name="fun_fact" value="{{item.fun_fact}}" placeholder="Optional fun fact"><label class="form-check"><input class="form-check-input" type="checkbox" name="enabled" {% if item.enabled %}checked{% endif %}> Enabled</label><div class="d-flex gap-2"><button class="btn btn-primary flex-fill" type="submit">Save</button><button class="btn btn-outline-danger" type="submit" name="action" value="delete_question" onclick="return confirm('Delete this trivia question?')">Delete</button></div></form></details>{% empty %}<div class="panel">No trivia questions yet.</div>{% endfor %}
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-heading">
+  <div><div class="eyebrow">Parent Corner · Trivia</div><h1>Trivia studio</h1><p>Games draw a shuffled, no-repeat deck before recycling questions.</p></div>
+  <div class="secondary-links"><a href="{% url 'hive:moxie_launcher' object.pk %}">← Activities</a><a href="{% url 'hive:joke_settings' object.pk %}">Joke studio</a></div>
 </div>
+{% if request.GET.saved %}<div class="alert alert-success">{{request.GET.saved}}</div>{% endif %}
+<section class="panel mb-3">
+  <form method="post" action="{% url 'hive:trivia_configure' object.pk %}">{% csrf_token %}<input type="hidden" name="action" value="save_options">
+    <div class="compact-options">
+      <div><h2 class="panel-title mb-1">Game mix</h2><p class="form-text m-0">No category selection means all enabled questions.</p></div>
+      <div class="category-picker">{% for category in categories %}<label><input type="checkbox" name="categories" value="{{category}}" {% if not object.trivia_categories or category in object.trivia_categories %}checked{% endif %}><span>{{category}}</span></label>{% endfor %}</div>
+      <label class="count-control">Questions <input class="form-control" type="number" name="question_count" min="3" max="20" value="{{object.trivia_question_count}}"></label>
+      <button class="btn btn-primary">Save mix</button>
+    </div>
+  </form>
+</section>
+<details class="panel mb-3 add-drawer"><summary>＋ Add a trivia question</summary>
+  <form method="post" action="{% url 'hive:trivia_configure' object.pk %}" class="editor-grid mt-3">{% csrf_token %}<input type="hidden" name="action" value="save_question">
+    <label>Category<input class="form-control" name="category" required></label><label class="wide">Question<input class="form-control" name="question" required></label>
+    <label>Accepted answers<input class="form-control" name="answers" placeholder="answer, alternate" required></label><label class="wide">Optional fun fact<input class="form-control" name="fun_fact"></label>
+    <label class="toggle"><input type="checkbox" name="enabled" checked> Enabled</label><button class="btn btn-primary">Add question</button>
+  </form>
+</details>
+<section class="panel">
+  <div class="list-toolbar"><div><h2 class="panel-title mb-1">Question library <span class="count-chip">{{questions|length}}</span></h2><p class="form-text m-0">Search, sort, select one, or select all.</p></div><input id="library-search" class="form-control" type="search" placeholder="Search questions or categories"><select id="library-sort" class="form-select"><option value="category">Category</option><option value="question">Question A–Z</option><option value="status">Enabled first</option></select></div>
+  <form method="post" action="{% url 'hive:trivia_configure' object.pk %}" id="library-form">{% csrf_token %}<input type="hidden" name="action" value="bulk_questions">
+    <div class="bulk-bar"><label><input id="select-all" type="checkbox"> Select all visible</label><span id="selected-count">0 selected</span><select name="operation" class="form-select"><option value="enable">Enable</option><option value="disable">Disable</option><option value="delete">Delete</option></select><button class="btn btn-outline-primary">Apply</button></div>
+  </form>
+  <div class="compact-library" id="library">
+  {% for item in questions %}<details class="library-row" data-category="{{item.category|lower}}" data-title="{{item.question|lower}}" data-enabled="{{item.enabled|yesno:'1,0'}}">
+    <summary><input form="library-form" class="row-select" type="checkbox" name="question_ids" value="{{item.pk}}" onclick="event.stopPropagation()"><span class="badge text-bg-light">{{item.category}}</span><strong>{{item.question}}</strong><small>{{item.accepted_answers|join:', '}}</small><span class="status-pill {% if item.enabled %}enabled{% endif %}">{% if item.enabled %}On{% else %}Off{% endif %}</span></summary>
+    <div class="inline-editor">
+      <label>Category<input form="edit-q-{{item.pk}}" class="form-control" name="category" value="{{item.category}}"></label><label class="wide">Question<input form="edit-q-{{item.pk}}" class="form-control" name="question" value="{{item.question}}"></label>
+      <label>Answers<input form="edit-q-{{item.pk}}" class="form-control" name="answers" value="{{item.accepted_answers|join:', '}}"></label><label class="wide">Fun fact<input form="edit-q-{{item.pk}}" class="form-control" name="fun_fact" value="{{item.fun_fact}}"></label>
+      <form id="edit-q-{{item.pk}}" method="post" action="{% url 'hive:trivia_configure' object.pk %}">{% csrf_token %}<input type="hidden" name="action" value="save_question"><input type="hidden" name="question_id" value="{{item.pk}}"><label class="toggle"><input type="checkbox" name="enabled" {% if item.enabled %}checked{% endif %}> Enabled</label><button class="btn btn-primary btn-sm">Save</button><button class="btn btn-outline-danger btn-sm" name="action" value="delete_question" onclick="return confirm('Delete this question?')">Delete</button></form>
+    </div>
+  </details>{% empty %}<div class="empty-state">No trivia questions yet.</div>{% endfor %}
+  </div>
+</section>
+<script>{% include 'hive/library_controls.js' %}</script>
 {% endblock %}

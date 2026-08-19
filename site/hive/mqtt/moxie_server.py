@@ -20,7 +20,7 @@ from .protos.embodied.logging.Log_pb2 import ProtoSubscribe
 from .protos.embodied.logging.Cloud2_pb2 import ServiceConfiguration2
 from .protos.embodied.wifiapp.QRCommands_pb2 import StartPairingQR
 from .zmq_stt_handler import STTHandler
-from ..models import HiveConfiguration
+from ..models import HiveConfiguration, RobotCommandEvent
 
 _BASIC_FORMAT = '{1}'
 _MOXIE_SERVICE_INSTANCE = None
@@ -380,7 +380,15 @@ class MoxieServer:
     # NOTE: Called from worker thread pool
     def ingest_robot_state(self, device_id, statedata):
         self._robot_data.put_state(device_id, statedata)
-        if statedata.get('mode') == 'sleep':
+        mode = statedata.get('mode')
+        command = RobotCommandEvent.objects.filter(
+            device__device_id=device_id, status='sent',
+        ).order_by('-created_at').first()
+        if command and ((command.action == 'sleep' and mode == 'sleep') or (command.action != 'sleep' and mode not in ('sleep', None))):
+            command.status = 'confirmed'
+            command.detail = f'Robot reported mode: {mode}'
+            command.save(update_fields=['status', 'detail', 'updated_at'])
+        if mode == 'sleep':
             if self._remote_chat.clear_control(device_id, action='sleep'):
                 logger.info('Cleared delivered sleep fallback for %s', device_id)
 

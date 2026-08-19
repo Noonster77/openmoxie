@@ -59,6 +59,7 @@ class MoxieDevice(models.Model):
     speaker_names = models.JSONField(default=list, blank=True)
     trivia_categories = models.JSONField(default=list, blank=True)
     trivia_question_count = models.PositiveSmallIntegerField(default=10)
+    trivia_seen_question_ids = models.JSONField(default=list, blank=True)
 
     def is_paired(self):
         if self.robot_config:
@@ -183,3 +184,32 @@ class TriviaQuestion(models.Model):
 
     def __str__(self):
         return f'{self.category}: {self.question}'
+
+
+class Joke(models.Model):
+    collection = models.CharField(max_length=60, default='Family favorites', db_index=True)
+    setup = models.TextField()
+    punchline = models.TextField()
+    enabled = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        ordering = ['collection', 'setup']
+
+    def __str__(self):
+        return f'{self.collection}: {self.setup}'
+
+
+class RobotCommandEvent(models.Model):
+    device = models.ForeignKey(MoxieDevice, on_delete=models.CASCADE, related_name='command_events')
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    action = models.CharField(max_length=40)
+    label = models.CharField(max_length=100, blank=True, default='')
+    status = models.CharField(max_length=20, default='sent')
+    detail = models.CharField(max_length=255, blank=True, default='')
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.device} {self.action} {self.status}'

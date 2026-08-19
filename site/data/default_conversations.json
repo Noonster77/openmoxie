@@ -69,6 +69,16 @@
       "max_volleys": 10
     },
     {
+      "name": "OpenMoxie Family Jokes",
+      "source_version": 1,
+      "model": "gpt-4o-mini",
+      "module_id": "OPENMOXIE_JOKES",
+      "content_id": "default",
+      "prompt": "Deterministic local joke player; no AI provider is used.",
+      "opener": "Let's tell some jokes!",
+      "max_volleys": 9999
+    },
+    {
       "name": "OpenMoxie Homework Help",
       "source_version": 2,
       "model": "gpt-4o-mini",

@@ -9,7 +9,7 @@ import re
 import traceback
 from django.template import Template, Context
 from .ai_factory import chat_completion
-from ..models import MoxieDevice, SinglePromptChat, TriviaQuestion
+from ..models import Joke, MoxieDevice, SinglePromptChat, TriviaQuestion
 from .volley import Volley
 from .conversation_log import safety_redirect
 
@@ -497,10 +497,26 @@ class TriviaChatSession(ChatSession):
             query = TriviaQuestion.objects.filter(enabled=True)
             if categories:
                 query = query.filter(category__in=categories)
+            rows = list(query)
+            unseen_rows = rows
+            rolled_deck = False
+            if device:
+                seen = {int(pk) for pk in device.trivia_seen_question_ids}
+                unseen_rows = [row for row in rows if row.pk not in seen]
+                requested = min(count, len(rows))
+                # Finish the old deck, then refill from a new shuffled deck without
+                # duplicating a question inside this game.
+                if len(unseen_rows) < requested:
+                    rolled_deck = True
+                    random.shuffle(unseen_rows)
+                    unseen_ids = {row.pk for row in unseen_rows}
+                    refill = [row for row in rows if row.pk not in unseen_ids]
+                    random.shuffle(refill)
+                    unseen_rows += refill[:requested - len(unseen_rows)]
             questions = [
-                {'category': row.category, 'question': row.question,
+                {'id': row.pk, 'category': row.category, 'question': row.question,
                  'answers': [str(answer).lower() for answer in row.accepted_answers], 'fun_fact': row.fun_fact}
-                for row in query
+                for row in unseen_rows
             ]
         except Exception:
             logger.exception('Could not load configured trivia; using built-in fallback')
@@ -508,6 +524,10 @@ class TriviaChatSession(ChatSession):
             questions = copy.deepcopy(self.FALLBACK_QUESTIONS)
         random.shuffle(questions)
         self._local_data['trivia_questions'] = questions[:min(count, len(questions))]
+        if device and questions and questions[0].get('id'):
+            selected_ids = [item['id'] for item in self._local_data['trivia_questions']]
+            device.trivia_seen_question_ids = selected_ids if rolled_deck else list(dict.fromkeys(device.trivia_seen_question_ids + selected_ids))
+            device.save(update_fields=['trivia_seen_question_ids'])
 
     def _patter(self):
         choices = [line for line in self.PATTER if line != self._local_data.get('last_patter')]
@@ -554,4 +574,47 @@ class TriviaChatSession(ChatSession):
                 return
             score_line = f" Your score is {self._local_data['trivia_score']} out of {index}." if index % 3 == 0 else ''
             text = f"{result}{score_line} {self._patter()} {self._ask(index)}"
+        volley.set_output(text, None)
+
+
+class JokeChatSession(ChatSession):
+    """API-free family joke player with collection filters and no repeats per run."""
+    def __init__(self):
+        super().__init__(max_history=0)
+        self._local_data['jokes'] = []
+        self._local_data['joke_index'] = 0
+
+    def _load(self, device_id):
+        device = MoxieDevice.objects.filter(device_id=device_id).first()
+        selected = (device.robot_config or {}).get('joke_collections', []) if device else []
+        query = Joke.objects.filter(enabled=True)
+        if selected:
+            query = query.filter(collection__in=selected)
+        jokes = list(query.values('setup', 'punchline', 'collection'))
+        random.shuffle(jokes)
+        self._local_data['jokes'] = jokes
+        self._local_data['joke_index'] = 0
+
+    def handle_volley(self, volley: Volley):
+        volley.assign_local_data(self._local_data)
+        if volley.request.get('command') == 'prompt' or not self._local_data['jokes']:
+            self._load(volley.device_id)
+        jokes = self._local_data['jokes']
+        if not jokes:
+            volley.set_output("I don't have any enabled jokes yet. Ask a grown-up to add one in Parent Corner.", None)
+            volley.add_launch_or_exit()
+            return
+        index = self._local_data['joke_index']
+        if volley.request.get('command') == 'prompt':
+            text = f"Joke time! {jokes[index]['setup']}"
+        else:
+            current = jokes[index]
+            index += 1
+            if index >= len(jokes):
+                text = f"{current['punchline']} That's every joke in this mix. Thanks for laughing with me!"
+                volley.set_output(text, None)
+                volley.add_launch_or_exit()
+                return
+            self._local_data['joke_index'] = index
+            text = f"{current['punchline']} Here's another. {jokes[index]['setup']}"
         volley.set_output(text, None)

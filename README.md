@@ -9,6 +9,17 @@ of you may already be concerned this is going to be complicated, and for those w
 are looking to just install and run something, we'll cover that first.
 </p>
 
+## Alpha family edition
+
+This branch is becoming a family-friendly starting point for running and extending Moxie after the original cloud service. The Control Center now includes a Parent Corner, live command acknowledgement, locally managed conversation history, no-repeat trivia decks, family joke collections, supported voice controls, local AI options, and clearer diagnostics.
+
+- New installation: [Installation guide](doc/Installation.md)
+- Family controls and alpha checklist: [Alpha testing guide](doc/AlphaTesting.md)
+- Developers and contributors: [Contributor guide](doc/Contributing.md)
+- Robot lifecycle and protocol details: [Moxie overview](doc/MoxieOverview.md)
+
+This is alpha software. Keep backups of `local/work`, expect rough robot-firmware behavior, and report reproducible problems with secrets and family conversation text removed.
+
 ## What is OpenMoxie
 
 A local network hub that Moxie can connect with and a local network service that provides the critical messaging

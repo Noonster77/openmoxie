@@ -11,14 +11,14 @@ history of the conversation and provides mostly seemless conversation context fo
 even when the user provides input in multiple speech windows before hearing a response.
 '''
 import concurrent.futures
-from ..models import SinglePromptChat
+from ..models import RobotCommandEvent, SinglePromptChat
 from ..automarkup import process as automarkup_process
 from ..automarkup import initialize_rules as automarkup_initialize_rules
 import logging
 import threading
 from datetime import datetime
 from .global_responses import GlobalResponses
-from .conversations import ChatSession, HomeworkChatSession, SinglePromptDBChatSession, TriviaChatSession
+from .conversations import ChatSession, HomeworkChatSession, JokeChatSession, SinglePromptDBChatSession, TriviaChatSession
 from .volley import Volley
 from .conversation_log import record_conversation
 
@@ -82,6 +82,13 @@ class RemoteChat:
                 return
             self._pending_controls.pop(device_id, None)
         logger.info('Cleared delivered launch fallback for %s', device_id)
+        command = RobotCommandEvent.objects.filter(
+            device__device_id=device_id, status='sent'
+        ).order_by('-created_at').first()
+        if command and command.action != 'sleep':
+            command.status = 'confirmed'
+            command.detail = f"Robot opened {request.get('module_id')}/{request.get('content_id')}"
+            command.save(update_fields=['status', 'detail', 'updated_at'])
 
     def _apply_control(self, device_id, volley):
         control = self._take_control(device_id)
@@ -113,6 +120,8 @@ class RemoteChat:
             for content_id in cid_list:
                 if chat.module_id == 'OPENMOXIE_TRIVIA':
                     new_modules[f'{chat.module_id}/{content_id}'] = { 'xtor': TriviaChatSession, 'params': {} }
+                elif chat.module_id == 'OPENMOXIE_JOKES':
+                    new_modules[f'{chat.module_id}/{content_id}'] = { 'xtor': JokeChatSession, 'params': {} }
                 elif chat.module_id == 'OPENMOXIE_HOMEWORK':
                     new_modules[f'{chat.module_id}/{content_id}'] = { 'xtor': HomeworkChatSession, 'params': { 'pk': chat.pk } }
                 else:

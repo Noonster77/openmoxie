@@ -13,7 +13,7 @@
 <body>
     <nav class="app-nav">
       <a class="brand" href="{% url 'hive:dashboard' %}"><img src="{% static 'hive/openmoxie_logo.svg' %}" alt="OpenMoxie"> <span>OpenMoxie</span></a>
-      <div class="nav-links"><a href="{% url 'hive:dashboard' %}">Control Center</a><a href="{% url 'hive:setup' %}">AI &amp; Network</a><a href="{% url 'admin:index' %}">Advanced</a></div>
+      <div class="nav-links"><a href="{% url 'hive:dashboard' %}">Home</a><a href="{% url 'hive:dashboard' %}#parent-corner">Parent Corner</a><a href="{% url 'hive:setup' %}">Setup</a><a href="{% url 'hive:guide' %}">Help &amp; Alpha Guide</a><a href="{% url 'admin:index' %}">Advanced</a></div>
       <span class="version-chip">v{{moxie_version}}</span>
     </nav>
     <div id="content" class="app-shell">

@@ -15,12 +15,13 @@ from PIL import Image
 from io import BytesIO
 from copy import deepcopy
 
-from .models import ConversationEvent, GlobalResponse, SinglePromptChat, MoxieDevice, MoxieSchedule, HiveConfiguration, MentorBehavior, TriviaQuestion
+from .models import ConversationEvent, GlobalResponse, HiveConfiguration, Joke, MentorBehavior, MoxieDevice, MoxieSchedule, RobotCommandEvent, SinglePromptChat, TriviaQuestion
 from .content.data import DM_MISSION_CONTENT_IDS, MISSION_DESCRIPTIONS, RECOMMENDABLE_MODULES, get_moxie_customization_groups
 from .data_import import update_import_status, import_content
 from .mqtt.moxie_server import get_instance
 from .mqtt.robot_data import DEFAULT_ROBOT_CONFIG, DEFAULT_ROBOT_SETTINGS
 from .mqtt.volley import Volley
+from .mqtt.conversation_log import rewrite_daily_transcript
 from .mqtt.ai_factory import create_chat_client, get_chat_model
 import json
 import uuid
@@ -122,6 +123,10 @@ class DashboardView(generic.TemplateView):
         context['safety_alerts_today'] = ConversationEvent.objects.filter(safety_flagged=True, created_at__date=date.today()).count()
         return context
 
+
+class GuideView(generic.TemplateView):
+    template_name = 'hive/guide.html'
+
 # STATUS - Lightweight, credential-free diagnostics used by the dashboard.
 def connection_status(request):
     service = get_instance()
@@ -164,6 +169,11 @@ def live_activity(request, pk):
             'safety_flagged': event.safety_flagged, 'safety_categories': event.safety_categories,
         } for event in reversed(events)],
         'debug': _safe_debug_tail(),
+        'commands': [{
+            'id': command.pk, 'time': command.created_at.isoformat(), 'action': command.action,
+            'label': command.label or command.action.title(), 'status': command.status,
+            'detail': command.detail,
+        } for command in device.command_events.all()[:12]],
     })
 
 
@@ -206,6 +216,35 @@ def transcript_download(request, pk, day):
     response = HttpResponse('\n'.join(lines) + '\n', content_type='text/plain; charset=utf-8')
     response['Content-Disposition'] = f'attachment; filename="moxie-{selected_date}.txt"'
     return response
+
+
+@require_http_methods(['POST'])
+def transcript_manage(request, pk):
+    device = get_object_or_404(MoxieDevice, pk=pk)
+    action = request.POST.get('action')
+    affected_days = set()
+    if action == 'delete_event':
+        event = get_object_or_404(ConversationEvent, pk=request.POST.get('event_id'), device=device)
+        affected_days.add(timezone.localtime(event.created_at).date())
+        event.delete()
+        message = 'Conversation entry deleted.'
+    elif action == 'delete_day':
+        try:
+            selected_day = date.fromisoformat(request.POST.get('date', ''))
+        except ValueError:
+            return HttpResponseBadRequest('Invalid transcript date.')
+        affected_days.add(selected_day)
+        ConversationEvent.objects.filter(device=device, created_at__date=selected_day).delete()
+        message = f'Transcript for {selected_day} deleted.'
+    elif action == 'delete_all':
+        affected_days.update(ConversationEvent.objects.filter(device=device).dates('created_at', 'day'))
+        ConversationEvent.objects.filter(device=device).delete()
+        message = 'All recorded conversations deleted.'
+    else:
+        return HttpResponseBadRequest('Unknown transcript action.')
+    for affected_day in affected_days:
+        rewrite_daily_transcript(device, affected_day)
+    return redirect(f"{reverse('hive:transcripts', args=[device.pk])}?saved={message}")
 
 
 @require_http_methods(["POST"])
@@ -259,6 +298,7 @@ def interact_update(request):
     return JsonResponse({'message': line, 'details': details})
 
 # RELOAD - Reload any records initialized from the database
+@require_http_methods(["POST"])
 def reload_database(request):
     get_instance().update_from_database()
     return redirect('hive:dashboard_alert', alert_message='Updated from database.')
@@ -316,6 +356,14 @@ def moxie_edit(request, pk):
            device.robot_config = {}
         device.robot_config["screen_brightness"] = float(request.POST["screen_brightness"])
         device.robot_config["audio_volume"] = float(request.POST["audio_volume"])
+        if device.robot_settings is None:
+            device.robot_settings = {}
+        props = device.robot_settings.setdefault('props', {})
+        props['cloud_tts_voice_id'] = request.POST.get('tts_voice', 'Joanna')
+        try:
+            props['cloud_tts_speech_rate'] = str(max(80, min(115, int(request.POST.get('tts_speech_rate', 96)))))
+        except ValueError:
+            return HttpResponseBadRequest('Speech rate must be a number.')
         if "child_pii" in device.robot_config:
             device.robot_config["child_pii"]["nickname"] = request.POST["nickname"]
         else:
@@ -356,6 +404,7 @@ class MoxieLauncherView(generic.DetailView):
             ('OPENMOXIE_CHAT', 'default'): 'Open-ended conversation using your selected local or cloud AI, family profile, and recent memory.',
             ('OPENMOXIE_HOMEWORK', 'default'): 'Fast, answer-first help with math, science, history, language arts, and other schoolwork—without follow-up questions.',
             ('OPENMOXIE_TRIVIA', 'default'): 'A configurable, API-free trivia game with categories, score, fun facts, and playful interludes.',
+            ('OPENMOXIE_JOKES', 'default'): 'A family-managed, API-free joke mix with collections and no repeats during a run.',
             ('OPENCONVO', 'reading'): 'Talk about a book, favorite characters, and what might happen next while reading together.',
             ('OPENCONVO', 'storytelling'): 'Invent a new story together, taking turns adding characters, places, and surprising events.',
         }
@@ -363,6 +412,7 @@ class MoxieLauncherView(generic.DetailView):
             ('OPENMOXIE_CHAT', 'default'): 'Talk with Moxie',
             ('OPENMOXIE_HOMEWORK', 'default'): 'Homework help',
             ('OPENMOXIE_TRIVIA', 'default'): 'Trivia game',
+            ('OPENMOXIE_JOKES', 'default'): 'Family joke time',
             ('OPENCONVO', 'reading'): 'Reading companion',
             ('OPENCONVO', 'storytelling'): 'Make a story together',
         }
@@ -396,6 +446,62 @@ class TriviaSettingsView(generic.DetailView):
         return context
 
 
+class JokeSettingsView(generic.DetailView):
+    template_name = 'hive/joke_settings.html'
+    model = MoxieDevice
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        selected = (self.object.robot_config or {}).get('joke_collections', [])
+        context['selected_collections'] = selected
+        context['collections'] = list(Joke.objects.order_by('collection').values_list('collection', flat=True).distinct())
+        context['jokes'] = Joke.objects.all()
+        return context
+
+
+@require_http_methods(['POST'])
+def joke_configure(request, pk):
+    device = get_object_or_404(MoxieDevice, pk=pk)
+    action = request.POST.get('action', 'save_options')
+    if action == 'save_options':
+        if device.robot_config is None:
+            device.robot_config = {}
+        device.robot_config['joke_collections'] = request.POST.getlist('collections')
+        device.save(update_fields=['robot_config'])
+        get_instance().handle_config_updated(device)
+        message = 'Joke mix saved.'
+    elif action == 'save_joke':
+        joke_id = request.POST.get('joke_id')
+        item = get_object_or_404(Joke, pk=joke_id) if joke_id else Joke()
+        item.collection = request.POST.get('collection', '').strip().title()
+        item.setup = request.POST.get('setup', '').strip()
+        item.punchline = request.POST.get('punchline', '').strip()
+        item.enabled = request.POST.get('enabled') == 'on'
+        if not item.collection or not item.setup or not item.punchline:
+            return HttpResponseBadRequest('Collection, setup, and punchline are required.')
+        item.save()
+        message = 'Joke saved.'
+    elif action == 'delete_joke':
+        get_object_or_404(Joke, pk=request.POST.get('joke_id')).delete()
+        message = 'Joke deleted.'
+    elif action == 'bulk_jokes':
+        ids = request.POST.getlist('joke_ids')
+        operation = request.POST.get('operation')
+        query = Joke.objects.filter(pk__in=ids)
+        if operation == 'enable':
+            query.update(enabled=True)
+        elif operation == 'disable':
+            query.update(enabled=False)
+        elif operation == 'delete':
+            query.delete()
+        else:
+            return HttpResponseBadRequest('Choose a bulk action.')
+        message = f'{len(ids)} jokes updated.'
+    else:
+        return HttpResponseBadRequest('Unknown joke configuration action.')
+    return redirect(f"{reverse('hive:joke_settings', args=[device.pk])}?saved={message}")
+
+
 @require_http_methods(['POST'])
 def trivia_configure(request, pk):
     device = get_object_or_404(MoxieDevice, pk=pk)
@@ -423,6 +529,19 @@ def trivia_configure(request, pk):
     elif action == 'delete_question':
         get_object_or_404(TriviaQuestion, pk=request.POST.get('question_id')).delete()
         message = 'Trivia question deleted.'
+    elif action == 'bulk_questions':
+        ids = request.POST.getlist('question_ids')
+        operation = request.POST.get('operation')
+        query = TriviaQuestion.objects.filter(pk__in=ids)
+        if operation == 'enable':
+            query.update(enabled=True)
+        elif operation == 'disable':
+            query.update(enabled=False)
+        elif operation == 'delete':
+            query.delete()
+        else:
+            return HttpResponseBadRequest('Choose a bulk action.')
+        message = f'{len(ids)} trivia questions updated.'
     else:
         return HttpResponseBadRequest('Unknown trivia configuration action.')
     return redirect(f"{reverse('hive:trivia_settings', args=[device.pk])}?saved={message}")
@@ -492,12 +611,13 @@ def robot_control(request, pk):
     service = get_instance()
     online = service.robot_data().device_online(device.device_id)
     message = ''
-    if action in ('wake', 'chat', 'homework', 'trivia', 'stop', 'interrupt'):
-        target = action if action in ('homework', 'trivia') else 'chat'
+    if action in ('wake', 'chat', 'homework', 'trivia', 'jokes', 'stop', 'interrupt'):
+        target = action if action in ('homework', 'trivia', 'jokes') else 'chat'
         module_id = {
             'chat': 'OPENMOXIE_CHAT',
             'homework': 'OPENMOXIE_HOMEWORK',
             'trivia': 'OPENMOXIE_TRIVIA',
+            'jokes': 'OPENMOXIE_JOKES',
         }[target]
         _set_quick_launch_schedule(device, module_id, label=target.title())
         service.handle_config_updated(device)
@@ -508,6 +628,7 @@ def robot_control(request, pk):
                 'chat': "I'm listening. What would you like to talk about?",
                 'homework': 'Homework mode is ready. Tell me the problem or subject.',
                 'trivia': 'Trivia time! Get your thinking cap ready.',
+                'jokes': "Joke time! I've got some good ones ready.",
             }[target],
         )
         label = {'wake': 'Wake and Chat', 'stop': 'Stop and Chat', 'interrupt': 'Stop and Chat'}.get(action, action.title())
@@ -526,6 +647,15 @@ def robot_control(request, pk):
         message = 'Sleep requested. Waiting for Moxie to report sleep; voice fallback: “Go to sleep, please.”' if sent else 'Moxie is offline; no sleep command was sent.'
     else:
         return HttpResponseBadRequest('Unknown robot action.')
+    command_status = 'sent' if online else 'failed'
+    RobotCommandEvent.objects.create(
+        device=device, action=action, label={
+            'wake': 'Wake & Chat', 'chat': 'Start chat', 'homework': 'Start homework',
+            'trivia': 'Start trivia', 'jokes': 'Start joke time', 'stop': 'Stop & Chat', 'interrupt': 'Stop activity',
+            'sleep': 'Go to sleep',
+        }.get(action, action.title()), status=command_status,
+        detail=message,
+    )
     if request.POST.get('ajax') == '1':
         return JsonResponse({'ok': True, 'message': message})
     return redirect('hive:dashboard_alert', alert_message=message)

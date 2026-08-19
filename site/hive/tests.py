@@ -8,11 +8,11 @@ from unittest.mock import MagicMock, patch
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
-from .models import ConversationEvent, GlobalResponse, HiveConfiguration, MoxieDevice, MoxieSchedule, SinglePromptChat, TriviaQuestion
+from .models import ConversationEvent, GlobalResponse, HiveConfiguration, Joke, MoxieDevice, MoxieSchedule, RobotCommandEvent, SinglePromptChat, TriviaQuestion
 from .mqtt.moxie_server import MoxieServer
 from .mqtt.moxie_remote_chat import RemoteChat
 from .mqtt.robot_data import RobotData
-from .mqtt.conversations import ChatSession, HomeworkChatSession, SingleContextChatSession, TriviaChatSession
+from .mqtt.conversations import ChatSession, HomeworkChatSession, JokeChatSession, SingleContextChatSession, TriviaChatSession
 from .mqtt.volley import Volley
 from .mqtt.conversation_log import record_conversation, safety_redirect
 from .mqtt.global_responses import GlobalResponses
@@ -444,3 +444,73 @@ class ParentSafetyAndVoiceTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['active_speaker'], 'Jack')
         self.assertEqual(response.json()['events'][0]['text'], 'Hello Moxie')
+
+    def test_trivia_deck_has_no_duplicates_and_remembers_seen_questions(self):
+        self.device.trivia_categories = ['Deck']
+        self.device.trivia_question_count = 3
+        self.device.save()
+        for number in range(5):
+            TriviaQuestion.objects.create(category='Deck', question=f'Question {number}?', accepted_answers=[str(number)])
+
+        first = TriviaChatSession()
+        first.handle_volley(Volley.request_from_speech('', device_id=self.device.device_id, module_id='OPENMOXIE_TRIVIA', content_id='default'))
+        first_ids = [item['id'] for item in first.local_data['trivia_questions']]
+        self.device.refresh_from_db()
+
+        self.assertEqual(len(first_ids), len(set(first_ids)))
+        self.assertEqual(set(first_ids), set(self.device.trivia_seen_question_ids))
+
+    def test_joke_session_does_not_repeat_a_joke(self):
+        Joke.objects.all().delete()
+        for number in range(3):
+            Joke.objects.create(collection='Test', setup=f'Setup {number}?', punchline=f'Punchline {number}.')
+        session = JokeChatSession()
+        prompt = Volley.request_from_speech('', device_id=self.device.device_id, module_id='OPENMOXIE_JOKES', content_id='default')
+        session.handle_volley(prompt)
+
+        self.assertEqual(len(session.local_data['jokes']), 3)
+        self.assertEqual(len({item['setup'] for item in session.local_data['jokes']}), 3)
+
+    @patch('hive.views.get_instance')
+    def test_transcript_entry_can_be_deleted_and_text_file_is_rewritten(self, get_instance):
+        get_instance.return_value.robot_data.return_value.get_persist_for_device.return_value = {}
+        with tempfile.TemporaryDirectory() as directory, override_settings(DATA_STORE_DIR=directory):
+            first = record_conversation(self.device.device_id, 'user', 'Keep me')
+            second = record_conversation(self.device.device_id, 'moxie', 'Remove me')
+            response = self.client.post(reverse('hive:transcript_manage', args=[self.device.pk]), {
+                'action': 'delete_event', 'event_id': second.pk,
+            })
+            transcript = next(__import__('pathlib').Path(directory).glob('transcripts/*/*.txt')).read_text(encoding='utf-8')
+
+            self.assertEqual(response.status_code, 302)
+            self.assertTrue(ConversationEvent.objects.filter(pk=first.pk).exists())
+            self.assertFalse(ConversationEvent.objects.filter(pk=second.pk).exists())
+            self.assertIn('Keep me', transcript)
+            self.assertNotIn('Remove me', transcript)
+
+    @patch('hive.views.get_instance')
+    def test_voice_controls_are_saved_to_robot_settings(self, get_instance):
+        schedule = MoxieSchedule.objects.create(name='voice', schedule={'provided_schedule': []})
+        response = self.client.post(reverse('hive:moxie_edit', args=[self.device.pk]), {
+            'moxie_name': 'Family Moxie', 'nickname': 'Avery', 'speaker_names': 'Avery',
+            'conversation_profile': 'Friendly', 'schedule': schedule.pk, 'screen_brightness': '1',
+            'audio_volume': '.6', 'pairing_status': 'paired', 'tts_voice': 'Ivy',
+            'tts_speech_rate': '92',
+        })
+        self.device.refresh_from_db()
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.device.robot_settings['props']['cloud_tts_voice_id'], 'Ivy')
+        self.assertEqual(self.device.robot_settings['props']['cloud_tts_speech_rate'], '92')
+
+    @patch('hive.views.get_instance')
+    def test_parent_corner_pages_render(self, get_instance):
+        get_instance.return_value.robot_data.return_value.get_config_for_device.return_value = {
+            'audio_volume': .6, 'screen_brightness': 1, 'child_pii': {'nickname': 'Avery'},
+        }
+        get_instance.return_value.robot_data.return_value.device_online.return_value = True
+        for route in ('monitor', 'transcripts', 'trivia_settings', 'joke_settings', 'moxie'):
+            with self.subTest(route=route):
+                response = self.client.get(reverse(f'hive:{route}', args=[self.device.pk]))
+                self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.client.get(reverse('hive:guide')).status_code, 200)

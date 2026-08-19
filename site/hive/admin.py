@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import ConversationEvent, PersistentData, SinglePromptChat,MoxieDevice,MoxieSchedule,HiveConfiguration,MentorBehavior,GlobalResponse,TriviaQuestion
+from .models import ConversationEvent, Joke, PersistentData, RobotCommandEvent, SinglePromptChat,MoxieDevice,MoxieSchedule,HiveConfiguration,MentorBehavior,GlobalResponse,TriviaQuestion
 
 admin.site.register(SinglePromptChat)
 admin.site.register(MoxieDevice)
@@ -10,6 +10,8 @@ admin.site.register(MentorBehavior)
 admin.site.register(GlobalResponse)
 admin.site.register(PersistentData)
 admin.site.register(ConversationEvent)
+admin.site.register(Joke)
+admin.site.register(RobotCommandEvent)
 
 @admin.register(TriviaQuestion)
 class TriviaQuestionAdmin(admin.ModelAdmin):

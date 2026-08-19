@@ -22,10 +22,11 @@
       <form method="post" action="{% url 'hive:robot_control' device.pk %}">{% csrf_token %}<input type="hidden" name="action" value="chat"><button class="action-chat">Chat</button></form>
       <form method="post" action="{% url 'hive:robot_control' device.pk %}">{% csrf_token %}<input type="hidden" name="action" value="homework"><button class="action-homework">Homework</button></form>
       <form method="post" action="{% url 'hive:robot_control' device.pk %}">{% csrf_token %}<input type="hidden" name="action" value="trivia"><button class="action-trivia">Trivia</button></form>
+      <form method="post" action="{% url 'hive:robot_control' device.pk %}">{% csrf_token %}<input type="hidden" name="action" value="jokes"><button class="action-jokes">Jokes</button></form>
       <form method="post" action="{% url 'hive:robot_control' device.pk %}">{% csrf_token %}<input type="hidden" name="action" value="stop"><button class="action-stop">Stop &amp; Chat</button></form>
       <form method="post" action="{% url 'hive:robot_control' device.pk %}">{% csrf_token %}<input type="hidden" name="action" value="sleep"><button class="action-sleep">Sleep</button></form>
     </div>
-    <div class="secondary-links"><a href="{% url 'hive:monitor' device.pk %}">Live monitor</a><a href="{% url 'hive:transcripts' device.pk %}">Transcripts</a><a href="{% url 'hive:moxie_launcher' device.pk %}">Activity library</a><a href="{% url 'hive:trivia_settings' device.pk %}">Trivia setup</a><a href="{% url 'hive:moxie' device.pk %}">Profile &amp; settings</a><a href="{% url 'hive:puppet' device.pk %}">Puppet</a></div>
+    <div class="secondary-links"><a href="{% url 'hive:monitor' device.pk %}">Live monitor</a><a href="{% url 'hive:transcripts' device.pk %}">Conversations</a><a href="{% url 'hive:moxie_launcher' device.pk %}">Activities</a><a href="{% url 'hive:moxie' device.pk %}">Family &amp; voice</a><a href="{% url 'hive:trivia_settings' device.pk %}">Trivia</a><a href="{% url 'hive:joke_settings' device.pk %}">Jokes</a><a href="{% url 'hive:puppet' device.pk %}">Puppet</a></div>
     {% if forloop.first %}<span id="primary-live-url" data-url="{% url 'hive:live_activity' device.pk %}"></span>{% endif %}
   </section>
 {% empty %}<div class="panel"><h3>No Moxie found yet</h3><p>Use the Migration QR and wake the robot. It will appear here after reaching MQTT.</p></div>{% endfor %}
@@ -33,12 +34,14 @@
 
 <div class="safety-banner mb-4"><strong>Voice shortcuts:</strong> “Play trivia,” “Talk about something else,” “Stop this mission,” “Go to sleep,” “I’m Jack,” and “This is Daddy.” Safety flags are keyword-based review aids and can make mistakes; they are not a substitute for adult supervision.</div>
 
+<section id="parent-corner" class="parent-corner mb-4"><div><div class="eyebrow">Parent Corner</div><h2>Tools for your family</h2><p>Personalize Moxie, shape activities, review local records, and keep an eye on live sessions.</p></div>{% for device in recent_devices %}<div class="parent-tool-grid"><a href="{% url 'hive:moxie' device.pk %}"><span>👪</span><strong>Family &amp; voice</strong><small>People, personality, pace</small></a><a href="{% url 'hive:monitor' device.pk %}"><span>✨</span><strong>Live room</strong><small>Commands and conversation</small></a><a href="{% url 'hive:transcripts' device.pk %}"><span>🔒</span><strong>Conversation privacy</strong><small>Review, download, delete</small></a><a href="{% url 'hive:trivia_settings' device.pk %}"><span>🧠</span><strong>Trivia studio</strong><small>Mix a no-repeat deck</small></a><a href="{% url 'hive:joke_settings' device.pk %}"><span>😄</span><strong>Joke studio</strong><small>Choose one or all lists</small></a><a href="{% url 'hive:guide' %}"><span>🚀</span><strong>Alpha guide</strong><small>Test and build together</small></a></div>{% empty %}<p>Connect a robot to open Parent Corner tools.</p>{% endfor %}</section>
+
 <div class="two-column mb-4">
   <section class="panel"><div class="d-flex justify-content-between align-items-center"><h2 class="panel-title">Live conversation</h2><span id="active-speaker" class="badge text-bg-light">Speaker: unknown</span></div><div id="conversation-feed" class="conversation-feed"><p class="text-muted">Waiting for conversation activity…</p></div></section>
   <section class="panel"><div class="d-flex justify-content-between align-items-center"><h2 class="panel-title">Live debug</h2><span class="text-muted small">Auto-refreshing</span></div><pre id="debug-window" class="debug-window">Waiting for server logs…</pre></section>
 </div>
 
-<details class="panel"><summary class="fw-bold">Content and maintenance</summary><div class="secondary-links mt-3"><a href="{% url 'hive:reload_database' %}">Reload database content</a><a href="{% url 'hive:export_content' %}">Export content</a><a href="{% url 'admin:index' %}">Database admin</a></div><p class="text-muted mt-3 mb-0">{{conversations|length}} conversations and {{schedules|length}} schedules are installed.</p></details>
+<details class="panel"><summary class="fw-bold">Content and maintenance</summary><div class="secondary-links mt-3"><form method="post" action="{% url 'hive:reload_database' %}">{% csrf_token %}<button class="link-button">Reload database content</button></form><a href="{% url 'hive:export_content' %}">Export content</a><a href="{% url 'admin:index' %}">Database admin</a></div><p class="text-muted mt-3 mb-0">{{conversations|length}} conversations and {{schedules|length}} schedules are installed.</p></details>
 
 <script>
 (function(){

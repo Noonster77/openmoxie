@@ -61,3 +61,23 @@ def record_conversation(device_id, role, text, module_id='', content_id=''):
         with (transcript_dir / f'{day}.txt').open('a', encoding='utf-8') as transcript:
             transcript.write(line + '\n')
     return event
+
+
+def rewrite_daily_transcript(device, day):
+    """Make the text export mirror the database after parent edits/deletions."""
+    safe_device = re.sub(r'[^A-Za-z0-9_.-]', '_', device.device_id)
+    transcript_dir = Path(settings.DATA_STORE_DIR) / 'transcripts' / safe_device
+    transcript_path = transcript_dir / f'{day.isoformat()}.txt'
+    events = ConversationEvent.objects.filter(device=device, created_at__date=day)
+    with _FILE_LOCK:
+        if not events.exists():
+            transcript_path.unlink(missing_ok=True)
+            return
+        transcript_dir.mkdir(parents=True, exist_ok=True)
+        lines = []
+        for event in events:
+            line = f"[{timezone.localtime(event.created_at).strftime('%H:%M:%S')}] {event.role.upper()}: {event.text}"
+            if event.safety_flagged:
+                line += f" [PARENT REVIEW: {', '.join(event.safety_categories)}]"
+            lines.append(line)
+        transcript_path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
