@@ -362,7 +362,11 @@ class MoxieServer:
         elif eventname == "device-logs":
             # These are per-client log messages
             logrec = json.loads(msg.payload)
-            logger.debug(f'{device_id}[{logrec.get("tag")}] - {logrec.get("message")}')
+            message = logrec.get("message", "")
+            # This empty power-board marker is not actionable server-side and
+            # can bury useful diagnostics. Keep detailed battery/charging logs.
+            if "[BSTATE_ERROR] [LizardErrorEvent]" not in message:
+                logger.debug(f'{device_id}[{logrec.get("tag")}] - {message}')
 
     # NOTE: Called from worker thread pool
     def provide_schedule(self, req_id, device_id):

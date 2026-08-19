@@ -20,6 +20,7 @@
     <div class="quick-actions">
       <form method="post" action="{% url 'hive:robot_control' device.pk %}">{% csrf_token %}<input type="hidden" name="action" value="wake"><button class="action-wake">Wake &amp; Chat</button></form>
       <form method="post" action="{% url 'hive:robot_control' device.pk %}">{% csrf_token %}<input type="hidden" name="action" value="chat"><button class="action-chat">Chat</button></form>
+      <form method="post" action="{% url 'hive:robot_control' device.pk %}">{% csrf_token %}<input type="hidden" name="action" value="homework"><button class="action-homework">Homework</button></form>
       <form method="post" action="{% url 'hive:robot_control' device.pk %}">{% csrf_token %}<input type="hidden" name="action" value="trivia"><button class="action-trivia">Trivia</button></form>
       <form method="post" action="{% url 'hive:robot_control' device.pk %}">{% csrf_token %}<input type="hidden" name="action" value="stop"><button class="action-stop">Stop &amp; Chat</button></form>
       <form method="post" action="{% url 'hive:robot_control' device.pk %}">{% csrf_token %}<input type="hidden" name="action" value="sleep"><button class="action-sleep">Sleep</button></form>

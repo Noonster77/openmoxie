@@ -18,6 +18,7 @@ class SinglePromptChat(models.Model):
     model = models.CharField(max_length=200, default="gpt-4o-mini")
     max_tokens = models.IntegerField(default=70)
     temperature = models.FloatField(default=0.5)
+    question_probability = models.FloatField(default=0.35)
     code = models.TextField(null=True, blank=True) # Python code for filter methods
     source_version = models.IntegerField(default=1)
     

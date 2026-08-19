@@ -101,6 +101,7 @@ class SingleContextChatSession(ChatSession):
                  model="gpt-3.5-turbo",
                  max_tokens=70,
                  temperature=0.5,
+                 question_probability=0.35,
                  exit_line="Well, that was fun.  Let's move on."
                  ):
         super().__init__(max_history)
@@ -112,6 +113,7 @@ class SingleContextChatSession(ChatSession):
         self._model = model
         self._max_tokens = max_tokens
         self._temperature = temperature
+        self._question_probability = max(0.0, min(1.0, question_probability))
         self._exit_line = exit_line
         self._auto_history = False
         self._pre_filter = None
@@ -145,7 +147,9 @@ class SingleContextChatSession(ChatSession):
         active_speaker = volley.persist_data.get('active_speaker')
         if active_speaker:
             ctx += f"\nThe person currently speaking identified themself as {active_speaker}."
-        if random.random() < 0.35:
+        if self._question_probability <= 0:
+            ctx += "\nDo not ask the person any questions. Give an answer, not a quiz, follow-up prompt, or offer to do more."
+        elif random.random() < self._question_probability:
             ctx += "\nEnd this response with one short, friendly question related to the conversation."
         else:
             ctx += "\nDo not force a question into this response."
@@ -297,7 +301,7 @@ class SingleContextChatSession(ChatSession):
 class SinglePromptDBChatSession(SingleContextChatSession):
     def __init__(self, pk):
         source = SinglePromptChat.objects.get(pk=pk)
-        super().__init__(max_history=source.max_history, max_volleys=source.max_volleys, model=source.model, prompt=source.prompt, opener=source.opener, max_tokens=source.max_tokens, temperature=source.temperature)
+        super().__init__(max_history=source.max_history, max_volleys=source.max_volleys, model=source.model, prompt=source.prompt, opener=source.opener, max_tokens=source.max_tokens, temperature=source.temperature, question_probability=source.question_probability)
         if source.code:
             try:
                 loc = locals()

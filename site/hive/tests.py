@@ -12,7 +12,7 @@ from .models import ConversationEvent, GlobalResponse, HiveConfiguration, MoxieD
 from .mqtt.moxie_server import MoxieServer
 from .mqtt.moxie_remote_chat import RemoteChat
 from .mqtt.robot_data import RobotData
-from .mqtt.conversations import ChatSession, TriviaChatSession
+from .mqtt.conversations import ChatSession, SingleContextChatSession, TriviaChatSession
 from .mqtt.volley import Volley
 from .mqtt.conversation_log import record_conversation, safety_redirect
 from .mqtt.global_responses import GlobalResponses
@@ -66,6 +66,18 @@ class MQTTServiceTests(SimpleTestCase):
         server._worker_queue.shutdown()
 
         self.assertIn("bad robot state", server._status["last_processing_error"])
+
+    @patch("hive.mqtt.moxie_server.logger.debug")
+    def test_empty_battery_state_error_log_is_ignored(self, debug):
+        server = MoxieServer.__new__(MoxieServer)
+        server.check_device_connect = MagicMock(return_value=None)
+        message = SimpleNamespace(payload=json.dumps({
+            "tag": "Unity", "message": "[BSTATE_ERROR] [LizardErrorEvent]",
+        }).encode())
+
+        server.on_device_event("d_battery", "device-logs", message)
+
+        debug.assert_not_called()
 
     @patch("hive.views.get_instance", return_value=None)
     def test_connection_status_reports_supervisor_not_started(self, get_instance):
@@ -147,6 +159,22 @@ class WakeControlTests(TestCase):
         )
 
     @patch("hive.views.get_instance")
+    def test_homework_control_launches_answer_first_module(self, get_instance):
+        service = get_instance.return_value
+        service.robot_data.return_value.device_online.return_value = True
+        service.queue_remote_action_to_bot.return_value = True
+
+        response = self.client.post(reverse('hive:robot_control', args=[self.device.pk]), {'action': 'homework'})
+
+        self.assertEqual(response.status_code, 302)
+        self.device.refresh_from_db()
+        self.assertEqual(self.device.schedule.schedule['wake_module']['module_id'], 'OPENMOXIE_HOMEWORK')
+        service.queue_remote_action_to_bot.assert_called_once_with(
+            'd_wake', 'launch', 'OPENMOXIE_HOMEWORK', 'default',
+            'Homework mode is ready. Tell me the problem or subject.',
+        )
+
+    @patch("hive.views.get_instance")
     def test_sleep_queues_router_action_interrupts_and_nudges_robot(self, get_instance):
         service = get_instance.return_value
         service.robot_data.return_value.device_online.return_value = True
@@ -184,6 +212,20 @@ class LocalAIAndMissionTests(TestCase):
         session.add_history('user', 'three')
 
         self.assertEqual([item['content'] for item in session._history], ['two', 'three'])
+
+    def test_zero_question_probability_enforces_answer_only_context(self):
+        session = SingleContextChatSession(
+            prompt='Answer homework quickly.', question_probability=0.0,
+        )
+        volley = Volley.request_from_speech(
+            'What is 12 times 8?', device_id='test',
+            module_id='OPENMOXIE_HOMEWORK', content_id='default',
+        )
+
+        context = session.make_volley_context(volley)[0]['content']
+
+        self.assertIn('Do not ask the person any questions', context)
+        self.assertNotIn('End this response with one short, friendly question', context)
 
     def test_trivia_scores_correct_answer_and_asks_next_question(self):
         device = MoxieDevice.objects.create(device_id='test', trivia_categories=['Test'])
@@ -233,6 +275,16 @@ class ParentSafetyAndVoiceTests(TestCase):
 
         self.assertEqual(payload['response_action']['action'], 'launch')
         self.assertEqual(payload['response_action']['module_id'], 'OPENMOXIE_TRIVIA')
+
+    def test_start_homework_voice_command_returns_launch_action(self):
+        responses = GlobalResponses()
+        responses.update_from_database()
+        volley = Volley.request_from_speech('Moxie, start homework mode', device_id=self.device.device_id)
+
+        payload = responses.check_global(volley)()
+
+        self.assertEqual(payload['response_action']['action'], 'launch')
+        self.assertEqual(payload['response_action']['module_id'], 'OPENMOXIE_HOMEWORK')
 
     def test_sleep_voice_command_accepts_trailing_please(self):
         responses = GlobalResponses()

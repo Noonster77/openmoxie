@@ -23,6 +23,7 @@ The default content currently lives in site/data/default_conversations.json.  Th
 |----|---------|----------|--------|
 |OpenMoxie Chat - Long|OPENMOXIE_CHAT|default|Default when asking to chat, can go very long.|
 |OpenMoxie Chat - Short|OPENMOXIE_CHAT|short|Default between modules in the schedule, short chats.|
+|OpenMoxie Homework Help|OPENMOXIE_HOMEWORK|default|Fast, answer-first homework help without follow-up questions.|
 |Open Conversation - reading|OPENCONVO|reading|After READING module, if user wants to chat.|
 |Open Conversation - storytelling|OPENCONVO|storytelling|After STORYTELLING module, if user wants to chat.|
 |Open Conversation - story|OPENCONVO|story|After STORY module, if user wants to chat.|

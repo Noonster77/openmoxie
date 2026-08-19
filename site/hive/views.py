@@ -354,12 +354,14 @@ class MoxieLauncherView(generic.DetailView):
         ) for item in RECOMMENDABLE_MODULES]
         remote_descriptions = {
             ('OPENMOXIE_CHAT', 'default'): 'Open-ended conversation using your selected local or cloud AI, family profile, and recent memory.',
+            ('OPENMOXIE_HOMEWORK', 'default'): 'Fast, answer-first help with math, science, history, language arts, and other schoolwork—without follow-up questions.',
             ('OPENMOXIE_TRIVIA', 'default'): 'A configurable, API-free trivia game with categories, score, fun facts, and playful interludes.',
             ('OPENCONVO', 'reading'): 'Talk about a book, favorite characters, and what might happen next while reading together.',
             ('OPENCONVO', 'storytelling'): 'Invent a new story together, taking turns adding characters, places, and surprising events.',
         }
         remote_names = {
             ('OPENMOXIE_CHAT', 'default'): 'Talk with Moxie',
+            ('OPENMOXIE_HOMEWORK', 'default'): 'Homework help',
             ('OPENMOXIE_TRIVIA', 'default'): 'Trivia game',
             ('OPENCONVO', 'reading'): 'Reading companion',
             ('OPENCONVO', 'storytelling'): 'Make a story together',
@@ -489,15 +491,23 @@ def robot_control(request, pk):
     service = get_instance()
     online = service.robot_data().device_online(device.device_id)
     message = ''
-    if action in ('wake', 'chat', 'trivia', 'stop', 'interrupt'):
-        target = 'trivia' if action == 'trivia' else 'chat'
-        module_id = 'OPENMOXIE_TRIVIA' if target == 'trivia' else 'OPENMOXIE_CHAT'
+    if action in ('wake', 'chat', 'homework', 'trivia', 'stop', 'interrupt'):
+        target = action if action in ('homework', 'trivia') else 'chat'
+        module_id = {
+            'chat': 'OPENMOXIE_CHAT',
+            'homework': 'OPENMOXIE_HOMEWORK',
+            'trivia': 'OPENMOXIE_TRIVIA',
+        }[target]
         _set_quick_launch_schedule(device, module_id, label=target.title())
         service.handle_config_updated(device)
         service.robot_data().schedule_update_live(device)
         immediate = _interrupt_and_launch(
             service, device, module_id, 'default',
-            "I'm listening. What would you like to talk about?" if target == 'chat' else "Trivia time! Get your thinking cap ready.",
+            {
+                'chat': "I'm listening. What would you like to talk about?",
+                'homework': 'Homework mode is ready. Tell me the problem or subject.',
+                'trivia': 'Trivia time! Get your thinking cap ready.',
+            }[target],
         )
         label = {'wake': 'Wake and Chat', 'stop': 'Stop and Chat', 'interrupt': 'Stop and Chat'}.get(action, action.title())
         message = label + (' launched immediately.' if immediate else ' queued for the next connection.')
