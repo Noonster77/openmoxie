@@ -16,6 +16,7 @@ from .mqtt.conversations import ChatSession, HomeworkChatSession, JokeChatSessio
 from .mqtt.volley import Volley
 from .mqtt.conversation_log import record_conversation, safety_redirect
 from .mqtt.global_responses import GlobalResponses
+from .mqtt.scheduler import expand_schedule
 
 
 class MQTTServiceTests(SimpleTestCase):
@@ -145,22 +146,22 @@ class WakeControlTests(TestCase):
         service = get_instance.return_value
         service.robot_data.return_value.device_online.return_value = True
         service.queue_remote_action_to_bot.return_value = True
+        self.device.robot_config = {'moxie_mode': 'TELEHEALTH'}
+        self.device.save(update_fields=['robot_config'])
 
         response = self.client.post(reverse('hive:robot_control', args=[self.device.pk]), {'action': 'trivia'})
 
         self.assertEqual(response.status_code, 302)
         self.device.refresh_from_db()
         self.assertEqual(self.device.schedule.schedule['wake_module']['module_id'], 'OPENMOXIE_TRIVIA')
+        self.assertNotIn('moxie_mode', self.device.robot_config)
         service.robot_data.return_value.schedule_update_live.assert_called_once_with(self.device)
         service.send_telehealth_interrupt.assert_called_once_with('d_wake')
         service.queue_remote_action_to_bot.assert_called_once_with(
             'd_wake', 'launch', 'OPENMOXIE_TRIVIA', 'default',
             'Trivia time! Get your thinking cap ready.',
         )
-        service.send_remote_action_to_bot.assert_called_once_with(
-            'd_wake', 'launch', 'OPENMOXIE_TRIVIA', 'default',
-            'Trivia time! Get your thinking cap ready.',
-        )
+        service.send_remote_action_to_bot.assert_not_called()
 
     @patch("hive.views.get_instance")
     def test_homework_control_launches_answer_first_module(self, get_instance):
@@ -177,10 +178,7 @@ class WakeControlTests(TestCase):
             'd_wake', 'launch', 'OPENMOXIE_HOMEWORK', 'default',
             'Homework mode is ready. Tell me the problem or subject.',
         )
-        service.send_remote_action_to_bot.assert_called_once_with(
-            'd_wake', 'launch', 'OPENMOXIE_HOMEWORK', 'default',
-            'Homework mode is ready. Tell me the problem or subject.',
-        )
+        service.send_remote_action_to_bot.assert_not_called()
 
     @patch("hive.views.get_instance")
     def test_sleep_queues_router_action_interrupts_and_nudges_robot(self, get_instance):
@@ -194,15 +192,13 @@ class WakeControlTests(TestCase):
         service.queue_remote_action_to_bot.assert_called_once_with('d_wake', 'sleep', text='Okay. Good night!')
         service.send_telehealth_interrupt.assert_called_once_with('d_wake')
         service.send_wakeup_to_bot.assert_called_once_with('d_wake')
-        service.send_remote_action_to_bot.assert_called_once_with(
-            'd_wake', 'sleep', text='Okay. Good night!'
-        )
+        service.send_remote_action_to_bot.assert_not_called()
 
     @patch("hive.views.get_instance")
-    def test_chat_style_dashboard_controls_all_send_immediately(self, get_instance):
+    def test_chat_style_dashboard_controls_queue_a_real_router_response(self, get_instance):
         service = get_instance.return_value
         service.robot_data.return_value.device_online.return_value = True
-        for action in ('wake', 'chat', 'stop'):
+        for action in ('wake', 'chat'):
             with self.subTest(action=action):
                 service.reset_mock()
                 service.robot_data.return_value.device_online.return_value = True
@@ -212,11 +208,18 @@ class WakeControlTests(TestCase):
                 )
 
                 self.assertEqual(response.status_code, 302)
-                service.send_remote_action_to_bot.assert_called_once()
+                service.send_remote_action_to_bot.assert_not_called()
                 self.assertEqual(
-                    service.send_remote_action_to_bot.call_args.args[2],
+                    service.queue_remote_action_to_bot.call_args.args[2],
                     'OPENMOXIE_CHAT',
                 )
+
+    def test_removed_stop_alias_is_rejected(self):
+        response = self.client.post(
+            reverse('hive:robot_control', args=[self.device.pk]),
+            {'action': 'stop'},
+        )
+        self.assertEqual(response.status_code, 400)
 
 
 class LocalAIAndMissionTests(TestCase):
@@ -326,6 +329,38 @@ class LocalAIAndMissionTests(TestCase):
         self.assertEqual(device.schedule.schedule['wake_module'], {
             'module_id': 'OPENMOXIE_TRIVIA', 'content_id': 'default',
         })
+
+    def test_tips_are_disabled_by_default_and_filtered_from_old_schedules(self):
+        device = MoxieDevice.objects.create(device_id='d_rotation')
+        schedule = {
+            'provided_schedule': [{'module_id': 'TNT'}, {'module_id': 'DM'}],
+            'generate': {'module_count': 0, 'chat_count': 0},
+        }
+
+        expanded = expand_schedule(schedule, device.device_id)
+
+        self.assertEqual(device.disabled_module_ids, ['TNT'])
+        self.assertNotIn('TNT', [item['module_id'] for item in expanded['provided_schedule']])
+        self.assertIn('DM', [item['module_id'] for item in expanded['provided_schedule']])
+
+    @patch('hive.views.get_instance')
+    def test_rotation_manager_saves_disabled_missions_and_stories(self, get_instance):
+        device = MoxieDevice.objects.create(device_id='d_rotation_save')
+        get_instance.return_value.robot_data.return_value.schedule_update_live.return_value = True
+
+        response = self.client.post(
+            reverse('hive:mission_edit', args=[device.pk]),
+            {'mission_action': 'save_rotation', 'included_modules': ['DM', 'JOKE']},
+            follow=True,
+        )
+        device.refresh_from_db()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('DM', device.disabled_module_ids)
+        self.assertNotIn('JOKE', device.disabled_module_ids)
+        self.assertIn('TNT', device.disabled_module_ids)
+        self.assertIn('STORY', device.disabled_module_ids)
+        self.assertContains(response, 'Activity rotation saved.')
 
 
 class ParentSafetyAndVoiceTests(TestCase):
@@ -514,3 +549,29 @@ class ParentSafetyAndVoiceTests(TestCase):
                 response = self.client.get(reverse(f'hive:{route}', args=[self.device.pk]))
                 self.assertEqual(response.status_code, 200)
         self.assertEqual(self.client.get(reverse('hive:guide')).status_code, 200)
+
+        trivia = self.client.get(reverse('hive:trivia_settings', args=[self.device.pk]))
+        self.assertContains(trivia, 'id="library-category"')
+        rotation = self.client.get(reverse('hive:moxie_missions', args=[self.device.pk]))
+        self.assertContains(rotation, 'Tips &amp; tricks are off by default.')
+        self.assertContains(rotation, 'data-module="STORY"')
+
+    def test_starter_libraries_exceed_alpha_targets_and_are_unique(self):
+        self.assertGreaterEqual(Joke.objects.count(), 100)
+        self.assertEqual(Joke.objects.count(), Joke.objects.values('setup').distinct().count())
+        self.assertGreaterEqual(TriviaQuestion.objects.count(), 200)
+        self.assertEqual(
+            TriviaQuestion.objects.count(),
+            TriviaQuestion.objects.values('question').distinct().count(),
+        )
+
+    def test_trivia_save_shows_animated_confirmation(self):
+        response = self.client.post(
+            reverse('hive:trivia_configure', args=[self.device.pk]),
+            {'action': 'save_options', 'question_count': '12', 'categories': ['Science']},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'save-toast')
+        self.assertContains(response, 'Trivia mix saved and ready for the next game.')

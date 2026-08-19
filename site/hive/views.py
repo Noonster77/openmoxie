@@ -2,6 +2,7 @@ from django.forms import model_to_dict
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.contrib.auth import get_user_model
+from django.contrib import messages
 from django.views import generic
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
@@ -96,6 +97,7 @@ def hive_configure(request):
     logger.info("Updated default Hive Configuration")
     # reload any cached db objects
     get_instance().update_from_database()
+    messages.success(request, 'Setup saved and loaded. New conversations will use these settings.')
     return HttpResponseRedirect(reverse("hive:dashboard"))
 
 # DASHBOARD - View and overview of the system
@@ -371,10 +373,17 @@ def moxie_edit(request, pk):
         # pairing/unpairing
         device.robot_config["pairing_status"] = request.POST["pairing_status"]
         device.save()
-        get_instance().handle_config_updated(device)
+        service = get_instance()
+        online = service.robot_data().device_online(device.device_id)
+        service.handle_config_updated(device)
+        messages.success(
+            request,
+            'Saved and sent to Moxie.' if online else 'Saved. Moxie will receive these settings when she reconnects.',
+        )
     except MoxieDevice.DoesNotExist as e:
         logger.warning("Moxie update for unfound pk {pk}")
-    return HttpResponseRedirect(reverse("hive:dashboard"))
+        return HttpResponseBadRequest('No such Moxie.')
+    return redirect('hive:moxie', pk=device.pk)
 
 
 @require_http_methods(["POST"])
@@ -469,7 +478,7 @@ def joke_configure(request, pk):
         device.robot_config['joke_collections'] = request.POST.getlist('collections')
         device.save(update_fields=['robot_config'])
         get_instance().handle_config_updated(device)
-        message = 'Joke mix saved.'
+        message = 'Joke mix saved and ready for the next joke session.'
     elif action == 'save_joke':
         joke_id = request.POST.get('joke_id')
         item = get_object_or_404(Joke, pk=joke_id) if joke_id else Joke()
@@ -480,7 +489,7 @@ def joke_configure(request, pk):
         if not item.collection or not item.setup or not item.punchline:
             return HttpResponseBadRequest('Collection, setup, and punchline are required.')
         item.save()
-        message = 'Joke saved.'
+        message = 'Joke saved and added to the library.'
     elif action == 'delete_joke':
         get_object_or_404(Joke, pk=request.POST.get('joke_id')).delete()
         message = 'Joke deleted.'
@@ -499,7 +508,8 @@ def joke_configure(request, pk):
         message = f'{len(ids)} jokes updated.'
     else:
         return HttpResponseBadRequest('Unknown joke configuration action.')
-    return redirect(f"{reverse('hive:joke_settings', args=[device.pk])}?saved={message}")
+    messages.success(request, message)
+    return redirect('hive:joke_settings', pk=device.pk)
 
 
 @require_http_methods(['POST'])
@@ -513,7 +523,7 @@ def trivia_configure(request, pk):
         except ValueError:
             return HttpResponseBadRequest('Question count must be a number.')
         device.save(update_fields=['trivia_categories', 'trivia_question_count'])
-        message = 'Trivia categories and game length saved.'
+        message = 'Trivia mix saved and ready for the next game.'
     elif action == 'save_question':
         question_id = request.POST.get('question_id')
         item = get_object_or_404(TriviaQuestion, pk=question_id) if question_id else TriviaQuestion()
@@ -525,7 +535,7 @@ def trivia_configure(request, pk):
         if not item.category or not item.question or not item.accepted_answers:
             return HttpResponseBadRequest('Category, question, and at least one accepted answer are required.')
         item.save()
-        message = 'Trivia question saved.'
+        message = 'Trivia question saved and added to the no-repeat deck.'
     elif action == 'delete_question':
         get_object_or_404(TriviaQuestion, pk=request.POST.get('question_id')).delete()
         message = 'Trivia question deleted.'
@@ -544,7 +554,8 @@ def trivia_configure(request, pk):
         message = f'{len(ids)} trivia questions updated.'
     else:
         return HttpResponseBadRequest('Unknown trivia configuration action.')
-    return redirect(f"{reverse('hive:trivia_settings', args=[device.pk])}?saved={message}")
+    messages.success(request, message)
+    return redirect('hive:trivia_settings', pk=device.pk)
 
 
 @require_http_methods(["POST"])
@@ -568,6 +579,7 @@ def launch_mission(request, pk):
     device.schedule = launch_schedule
     if device.robot_config is None:
         device.robot_config = {}
+    device.robot_config.pop('moxie_mode', None)
     device.robot_config['wake_button_enabled'] = True
     device.save(update_fields=['schedule', 'robot_config'])
     service = get_instance()
@@ -589,6 +601,10 @@ def _set_quick_launch_schedule(device, module_id, content_id='default', label='A
     device.schedule = launch_schedule
     if device.robot_config is None:
         device.robot_config = {}
+    # Normal activities use the Remote Chat router. Puppet mode (TELEHEALTH)
+    # bypasses that router, so leaving it enabled makes an activity appear to
+    # start while Moxie silently animates and never requests its first prompt.
+    device.robot_config.pop('moxie_mode', None)
     device.robot_config['wake_button_enabled'] = True
     device.save(update_fields=['schedule', 'robot_config'])
 
@@ -600,7 +616,6 @@ def _interrupt_and_launch(service, device, module_id, content_id='default', text
     service.queue_remote_action_to_bot(device.device_id, 'launch', module_id, content_id, text)
     service.send_telehealth_interrupt(device.device_id)
     service.send_wakeup_to_bot(device.device_id)
-    service.send_remote_action_to_bot(device.device_id, 'launch', module_id, content_id, text)
     return True
 
 
@@ -608,10 +623,12 @@ def _interrupt_and_launch(service, device, module_id, content_id='default', text
 def robot_control(request, pk):
     device = get_object_or_404(MoxieDevice, pk=pk)
     action = request.POST.get('action', '')
+    if action not in ('wake', 'chat', 'homework', 'trivia', 'jokes', 'interrupt', 'sleep'):
+        return HttpResponseBadRequest('Unknown robot action.')
     service = get_instance()
     online = service.robot_data().device_online(device.device_id)
     message = ''
-    if action in ('wake', 'chat', 'homework', 'trivia', 'jokes', 'stop', 'interrupt'):
+    if action in ('wake', 'chat', 'homework', 'trivia', 'jokes', 'interrupt'):
         target = action if action in ('homework', 'trivia', 'jokes') else 'chat'
         module_id = {
             'chat': 'OPENMOXIE_CHAT',
@@ -631,27 +648,29 @@ def robot_control(request, pk):
                 'jokes': "Joke time! I've got some good ones ready.",
             }[target],
         )
-        label = {'wake': 'Wake and Chat', 'stop': 'Stop and Chat', 'interrupt': 'Stop and Chat'}.get(action, action.title())
-        message = label + (' launched immediately.' if immediate else ' queued for the next connection.')
+        label = {'wake': 'Wake and Chat', 'interrupt': 'Return to Chat'}.get(action, action.title())
+        message = label + (' requested; waiting for Moxie to confirm the activity.' if immediate else ' queued for the next connection.')
     elif action == 'sleep':
         if online:
+            if device.robot_config is None:
+                device.robot_config = {}
+            if device.robot_config.pop('moxie_mode', None) is not None:
+                device.save(update_fields=['robot_config'])
+                service.handle_config_updated(device)
             sent = service.queue_remote_action_to_bot(device.device_id, 'sleep', text='Okay. Good night!')
             service.send_telehealth_interrupt(device.device_id)
             # Wake is also used as a router nudge. If Moxie is already awake it is
             # harmless; if she is between activities it causes the request that
             # consumes the queued sleep action instead of launching a schedule.
             service.send_wakeup_to_bot(device.device_id)
-            service.send_remote_action_to_bot(device.device_id, 'sleep', text='Okay. Good night!')
         else:
             sent = False
         message = 'Sleep requested. Waiting for Moxie to report sleep; voice fallback: “Go to sleep, please.”' if sent else 'Moxie is offline; no sleep command was sent.'
-    else:
-        return HttpResponseBadRequest('Unknown robot action.')
     command_status = 'sent' if online else 'failed'
     RobotCommandEvent.objects.create(
         device=device, action=action, label={
             'wake': 'Wake & Chat', 'chat': 'Start chat', 'homework': 'Start homework',
-            'trivia': 'Start trivia', 'jokes': 'Start joke time', 'stop': 'Stop & Chat', 'interrupt': 'Stop activity',
+            'trivia': 'Start trivia', 'jokes': 'Start joke time', 'interrupt': 'Return to chat',
             'sleep': 'Go to sleep',
         }.get(action, action.title()), status=command_status,
         detail=message,
@@ -750,17 +769,55 @@ class MoxieMissionsView(generic.DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # list of tupes (key,prettykey)
         context['mission_sets'] = [ (key, key.replace("_", " ")) for key in DM_MISSION_CONTENT_IDS.keys() ]
+        special = [
+            ('WELCOME', 'Welcome and introductions', 'Setup & guidance', 'The original first-time welcome.'),
+            ('ENROLLCONVO', 'Face and voice enrollment', 'Setup & guidance', 'Offers to enroll another person.'),
+            ('EVENTSANDHOLIDAYS', 'Events and holidays', 'Daily missions', 'Seasonal and calendar conversation.'),
+            ('TNT', 'Tips & tricks', 'Setup & guidance', 'Legacy tips that may mention guides or accessories.'),
+            ('SYSTEMSCHECK', 'System check', 'Setup & guidance', 'The original guided robot check.'),
+            ('DM', 'Daily missions', 'Daily missions', 'Moxie’s original social-emotional mission series.'),
+        ]
+        modules = [dict(module_id=mid, title=title, group=group, description=description) for mid, title, group, description in special]
+        for item in RECOMMENDABLE_MODULES:
+            module_id = item['module_id']
+            title, description = MISSION_DESCRIPTIONS.get(module_id, (module_id, 'Built-in Moxie activity.'))
+            group = 'Stories & reading' if module_id in ('STORY', 'STORYTELLING', 'READ') else item.get('category', 'Activities').replace('_', ' ').title()
+            modules.append(dict(module_id=module_id, title=title, group=group, description=description))
+        disabled = set(self.object.disabled_module_ids or [])
+        groups = {}
+        for item in modules:
+            item['enabled'] = item['module_id'] not in disabled
+            groups.setdefault(item['group'], []).append(item)
+        context['rotation_groups'] = [{'name': name, 'modules': items} for name, items in groups.items()]
+        context['disabled_count'] = len([item for item in modules if not item['enabled']])
         return context
 
 # MOXIE-POST - Save changes to a Moxie record
 @require_http_methods(["POST"])
 def mission_edit(request, pk):
-    try:
-        device = MoxieDevice.objects.get(pk=pk)
+    device = get_object_or_404(MoxieDevice, pk=pk)
+    mission_action = request.POST.get('mission_action', '')
+    if mission_action == 'save_rotation':
+        known_ids = {'WELCOME', 'ENROLLCONVO', 'EVENTSANDHOLIDAYS', 'TNT', 'SYSTEMSCHECK', 'DM'} | {
+            item['module_id'] for item in RECOMMENDABLE_MODULES
+        }
+        enabled_ids = set(request.POST.getlist('included_modules')) & known_ids
+        existing_unknown = set(device.disabled_module_ids or []) - known_ids
+        device.disabled_module_ids = sorted((known_ids - enabled_ids) | existing_unknown)
+        device.save(update_fields=['disabled_module_ids'])
+        service = get_instance()
+        applied = service.robot_data().schedule_update_live(device)
+        messages.success(
+            request,
+            f'Activity rotation saved. {len(known_ids - enabled_ids)} activities are off.' +
+            (' The next rotation will use it immediately.' if applied else ' It will apply when Moxie reconnects.'),
+        )
+        return redirect('hive:moxie_missions', pk=device.pk)
 
-        mission_action = request.POST["mission_action"]
+    if mission_action not in ('complete', 'forget', 'reset'):
+        return HttpResponseBadRequest('Choose a valid mission progress action.')
+    try:
         if mission_action == "reset":
             # Delete all MBH to start fresh
             MentorBehavior.objects.filter(device=device).delete()
@@ -778,10 +835,10 @@ def mission_edit(request, pk):
                 get_instance().robot_data().add_mbh_completion_bulk(device.device_id, module_id="DM", content_id_list=dm_cid_list)
                 msg = f'Completed {len(mission_sets)} Daily Mission Sets ({len(dm_cid_list)} missions) for {device}'
 
-        return redirect('hive:dashboard_alert', alert_message=msg)
-    except MoxieDevice.DoesNotExist as e:
-        logger.warning("Moxie update for unfound pk {pk}")
-        return redirect('hive:dashboard_alert', alert_message='No such Moxie')
+        messages.success(request, msg)
+        return redirect('hive:moxie_missions', pk=device.pk)
+    except KeyError:
+        return HttpResponseBadRequest('Choose a valid mission progress action.')
 
 # Enable wake-button support and wake a connected Moxie.
 @require_http_methods(["POST"])

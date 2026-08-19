@@ -76,14 +76,28 @@ Schedule Generation - generates a set of additional modules according to the gen
 to make a random schedule for the session.
 '''
 def expand_schedule(schedule, device_id):
+    try:
+        disabled_module_ids = set(
+            MoxieDevice.objects.only('disabled_module_ids').get(device_id=device_id).disabled_module_ids or []
+        )
+    except MoxieDevice.DoesNotExist:
+        disabled_module_ids = {'TNT'}
+
+    # Filtering happens at delivery time as well as in the editor. This keeps
+    # old/shared schedules from sneaking a disabled activity back in.
+    schedule = schedule.copy()
+    schedule['provided_schedule'] = [
+        item for item in schedule.get('provided_schedule', [])
+        if item.get('module_id') not in disabled_module_ids
+    ]
     if 'generate' in schedule:
         logger.info("Using generative schedule")
         # Update schedule data with automatic stuff
         chat_count = schedule['generate'].get('chat_count', 2)
         module_count = schedule['generate'].get('module_count', 6)
-        chat_modules = schedule['generate'].get('chat_modules', [{'module_id': 'OPENMOXIE_CHAT', 'content_id': 'short'}])
-        extra_modules = schedule['generate'].get('extra_modules', [])
-        excluded_module_ids = schedule['generate'].get('excluded_module_ids', [])
+        chat_modules = [item for item in schedule['generate'].get('chat_modules', [{'module_id': 'OPENMOXIE_CHAT', 'content_id': 'short'}]) if item.get('module_id') not in disabled_module_ids]
+        extra_modules = [item for item in schedule['generate'].get('extra_modules', []) if item.get('module_id') not in disabled_module_ids]
+        excluded_module_ids = set(schedule['generate'].get('excluded_module_ids', [])) | disabled_module_ids
         provided = schedule.get('provided_schedule', [])
 
         # TNT and SYSTEMSCHECK have to be removed manually, as robot will keep playing something

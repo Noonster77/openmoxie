@@ -1,5 +1,5 @@
 {% extends 'base.html' %}{% block content %}
-<div class="page-heading"><div><div class="eyebrow">Robot profile</div><h1>{{object.name|default:'Moxie'}} settings</h1><p>Personalize who Moxie talks with and manage this robot.</p></div><div class="secondary-links"><a href="{% url 'hive:monitor' object.pk %}">Live monitor</a><a href="{% url 'hive:moxie_launcher' object.pk %}">Mission library</a></div></div>
+<div class="page-heading"><div><div class="eyebrow">Robot profile</div><h1>{{object.name|default:'Moxie'}} settings</h1><p>Personalize who Moxie talks with and manage this robot.</p></div><div class="secondary-links"><a href="{% url 'hive:monitor' object.pk %}">Live monitor</a><a href="{% url 'hive:moxie_missions' object.pk %}">Activity rotation</a><a href="{% url 'hive:moxie_launcher' object.pk %}">Start an activity</a></div></div>
 <form id="moxie_edit" action="{% url 'hive:moxie_edit' object.pk %}" method="post">{% csrf_token %}
   <div class="settings-grid">
     <section class="panel settings-card"><span class="step-chip">1</span><h2 class="panel-title">Names &amp; speakers</h2>

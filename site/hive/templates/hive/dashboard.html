@@ -23,10 +23,9 @@
       <form method="post" action="{% url 'hive:robot_control' device.pk %}">{% csrf_token %}<input type="hidden" name="action" value="homework"><button class="action-homework">Homework</button></form>
       <form method="post" action="{% url 'hive:robot_control' device.pk %}">{% csrf_token %}<input type="hidden" name="action" value="trivia"><button class="action-trivia">Trivia</button></form>
       <form method="post" action="{% url 'hive:robot_control' device.pk %}">{% csrf_token %}<input type="hidden" name="action" value="jokes"><button class="action-jokes">Jokes</button></form>
-      <form method="post" action="{% url 'hive:robot_control' device.pk %}">{% csrf_token %}<input type="hidden" name="action" value="stop"><button class="action-stop">Stop &amp; Chat</button></form>
       <form method="post" action="{% url 'hive:robot_control' device.pk %}">{% csrf_token %}<input type="hidden" name="action" value="sleep"><button class="action-sleep">Sleep</button></form>
     </div>
-    <div class="secondary-links"><a href="{% url 'hive:monitor' device.pk %}">Live monitor</a><a href="{% url 'hive:transcripts' device.pk %}">Conversations</a><a href="{% url 'hive:moxie_launcher' device.pk %}">Activities</a><a href="{% url 'hive:moxie' device.pk %}">Family &amp; voice</a><a href="{% url 'hive:trivia_settings' device.pk %}">Trivia</a><a href="{% url 'hive:joke_settings' device.pk %}">Jokes</a><a href="{% url 'hive:puppet' device.pk %}">Puppet</a></div>
+    <div class="secondary-links"><a href="{% url 'hive:monitor' device.pk %}">Live monitor</a><a href="{% url 'hive:transcripts' device.pk %}">Conversations</a><a href="{% url 'hive:moxie_missions' device.pk %}">Activity rotation</a><a href="{% url 'hive:moxie_launcher' device.pk %}">Start activity</a><a href="{% url 'hive:moxie' device.pk %}">Family &amp; voice</a><a href="{% url 'hive:trivia_settings' device.pk %}">Trivia</a><a href="{% url 'hive:joke_settings' device.pk %}">Jokes</a><a href="{% url 'hive:puppet' device.pk %}">Puppet</a></div>
     {% if forloop.first %}<span id="primary-live-url" data-url="{% url 'hive:live_activity' device.pk %}"></span>{% endif %}
   </section>
 {% empty %}<div class="panel"><h3>No Moxie found yet</h3><p>Use the Migration QR and wake the robot. It will appear here after reaching MQTT.</p></div>{% endfor %}

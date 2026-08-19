@@ -38,6 +38,11 @@ class DevicePermit(Enum):
     PENDING = 2
     ALLOWED = 3
 
+
+def default_disabled_modules():
+    """Accessories-era guidance should never enter a new family's rotation."""
+    return ['TNT']
+
 class MoxieDevice(models.Model):
     device_id = models.CharField(max_length=200)
     email = models.EmailField(null=True, blank=True)
@@ -60,6 +65,7 @@ class MoxieDevice(models.Model):
     trivia_categories = models.JSONField(default=list, blank=True)
     trivia_question_count = models.PositiveSmallIntegerField(default=10)
     trivia_seen_question_ids = models.JSONField(default=list, blank=True)
+    disabled_module_ids = models.JSONField(default=default_disabled_modules, blank=True)
 
     def is_paired(self):
         if self.robot_config:

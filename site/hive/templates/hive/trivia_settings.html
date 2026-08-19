@@ -4,7 +4,6 @@
   <div><div class="eyebrow">Parent Corner · Trivia</div><h1>Trivia studio</h1><p>Games draw a shuffled, no-repeat deck before recycling questions.</p></div>
   <div class="secondary-links"><a href="{% url 'hive:moxie_launcher' object.pk %}">← Activities</a><a href="{% url 'hive:joke_settings' object.pk %}">Joke studio</a></div>
 </div>
-{% if request.GET.saved %}<div class="alert alert-success">{{request.GET.saved}}</div>{% endif %}
 <section class="panel mb-3">
   <form method="post" action="{% url 'hive:trivia_configure' object.pk %}">{% csrf_token %}<input type="hidden" name="action" value="save_options">
     <div class="compact-options">
@@ -23,7 +22,7 @@
   </form>
 </details>
 <section class="panel">
-  <div class="list-toolbar"><div><h2 class="panel-title mb-1">Question library <span class="count-chip">{{questions|length}}</span></h2><p class="form-text m-0">Search, sort, select one, or select all.</p></div><input id="library-search" class="form-control" type="search" placeholder="Search questions or categories"><select id="library-sort" class="form-select"><option value="category">Category</option><option value="question">Question A–Z</option><option value="status">Enabled first</option></select></div>
+  <div class="list-toolbar trivia-toolbar"><div><h2 class="panel-title mb-1">Question library <span class="count-chip">{{questions|length}}</span></h2><p class="form-text m-0">Filter a category, search, sort, select one, or select all.</p></div><select id="library-category" class="form-select" aria-label="Filter trivia category"><option value="">All categories</option>{% for category in categories %}<option value="{{category|lower}}">{{category}}</option>{% endfor %}</select><input id="library-search" class="form-control" type="search" placeholder="Search questions"><select id="library-sort" class="form-select"><option value="category">Category</option><option value="question">Question A–Z</option><option value="status">Enabled first</option></select></div>
   <form method="post" action="{% url 'hive:trivia_configure' object.pk %}" id="library-form">{% csrf_token %}<input type="hidden" name="action" value="bulk_questions">
     <div class="bulk-bar"><label><input id="select-all" type="checkbox"> Select all visible</label><span id="selected-count">0 selected</span><select name="operation" class="form-select"><option value="enable">Enable</option><option value="disable">Disable</option><option value="delete">Delete</option></select><button class="btn btn-outline-primary">Apply</button></div>
   </form>

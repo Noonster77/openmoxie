@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     {% bootstrap_css %}
     <script src="{% static 'js/jquery.js' %}"></script>
-    <link rel="stylesheet" href="{% static 'hive/style.css' %}?v={{moxie_version}}-ui3">
+    <link rel="stylesheet" href="{% static 'hive/style.css' %}?v={{moxie_version}}-ui5">
     <link rel="icon" type="image/svg+xml" href="{% static 'hive/favicon.svg' %}" sizes="any">
 </head>
 <body>
@@ -16,10 +16,12 @@
       <div class="nav-links"><a href="{% url 'hive:dashboard' %}">Home</a><a href="{% url 'hive:dashboard' %}#parent-corner">Parent Corner</a><a href="{% url 'hive:setup' %}">Setup</a><a href="{% url 'hive:guide' %}">Help &amp; Alpha Guide</a><a href="{% url 'admin:index' %}">Advanced</a></div>
       <span class="version-chip">v{{moxie_version}}</span>
     </nav>
+    {% if messages %}<div class="save-toast-stack" aria-live="polite" aria-atomic="true">{% for message in messages %}<div class="save-toast" role="status"><span class="save-check" aria-hidden="true">&#10003;</span><div><strong>Saved</strong><p>{{message}}</p></div><button type="button" aria-label="Dismiss confirmation" onclick="this.parentElement.remove()">&times;</button></div>{% endfor %}</div>{% endif %}
     <div id="content" class="app-shell">
         {% block content %}{% endblock %}
     </div>
     <footer class="app-footer">Local-first Moxie control &bull; Keep this service on your trusted home network</footer>
     {% bootstrap_javascript %}
+    <script>document.querySelectorAll('.save-toast').forEach((toast,index)=>setTimeout(()=>{toast.classList.add('leaving');setTimeout(()=>toast.remove(),350)},5200+(index*350)));</script>
 </body>
 </html>
