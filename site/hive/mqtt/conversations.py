@@ -156,10 +156,13 @@ class SingleContextChatSession(ChatSession):
             ctx += "\nDo not force a question into this response."
         if volley.conversation_profile:
             ctx += "\n\nCHILD PROFILE AND CONVERSATION RULES:\n" + volley.conversation_profile
-        if volley.conversation_memory_enabled:
+        # The live session history is already sent separately. Re-injecting the
+        # same persistent memory every turn duplicates tokens and slows local
+        # inference; use a compact memory only at the start of a session.
+        if volley.conversation_memory_enabled and self.is_empty():
             remembered = volley.persist_data.get('conversation_memory', {}).get('recent', [])
             if remembered:
-                memory_lines = [f"{item.get('role', 'user')}: {item.get('content', '')}" for item in remembered[-20:]]
+                memory_lines = [f"{item.get('role', 'user')}: {item.get('content', '')}" for item in remembered[-8:]]
                 ctx += "\n\nRECENT CONVERSATION MEMORY (use naturally; do not claim perfect memory):\n" + "\n".join(memory_lines)
         return [ { "role": "system", 
                     "content": ctx

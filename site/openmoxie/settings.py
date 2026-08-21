@@ -97,6 +97,13 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': DATA_STORE_DIR / 'db.sqlite3',
+        # MQTT callbacks and dashboard requests write from different threads.
+        # Wait for short-lived writers and acquire the write lock at BEGIN so a
+        # read-then-write transaction cannot fail immediately during upgrade.
+        'OPTIONS': {
+            'timeout': 10,
+            'transaction_mode': 'IMMEDIATE',
+        },
     }
 }
 

@@ -122,6 +122,16 @@ class RobotData:
                 "last_state": record.get("state_received_at") if record else None,
             }
         return details
+
+    def note_mode(self, robot_id, mode):
+        """Update live status when protocol activity proves a state transition."""
+        record = self._robot_map.get(robot_id)
+        if not record:
+            return
+        state = dict(record.get('state') or {})
+        state['mode'] = mode
+        record['state'] = state
+        record['state_received_at'] = timezone.now().isoformat()
     
     # Build a configuration record for a robot
     def build_config(self, device, hive_cfg):

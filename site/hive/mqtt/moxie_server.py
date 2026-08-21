@@ -98,6 +98,10 @@ class MoxieServer:
             re.IGNORECASE,
         )
         self._worker_queue = concurrent.futures.ThreadPoolExecutor(max_workers=5)
+        # Robot states must be committed in arrival order. Sending them through
+        # the general pool allowed an older mode to overwrite a newer one and
+        # made SQLite writers race each other during transition bursts.
+        self._state_worker_queue = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self._device_init_lock = threading.Lock()
         self._device_init_futures = {}
         self._status_lock = threading.Lock()
@@ -140,9 +144,9 @@ class MoxieServer:
         })
         return result
 
-    def _submit_worker(self, function, *args):
+    def _submit_worker(self, function, *args, executor=None):
         """Submit background work and surface exceptions that Futures otherwise hide."""
-        future = self._worker_queue.submit(function, *args)
+        future = (executor or self._worker_queue).submit(function, *args)
         task_name = getattr(function, "__name__", str(function))
 
         def report_failure(completed):
@@ -384,7 +388,16 @@ class MoxieServer:
         command = RobotCommandEvent.objects.filter(
             device__device_id=device_id, status='sent',
         ).order_by('-created_at').first()
-        if command and ((command.action == 'sleep' and mode == 'sleep') or (command.action != 'sleep' and mode not in ('sleep', None))):
+        # A transient idle/connecting state does not prove a requested module
+        # opened. Module launches are confirmed by _clear_completed_launch;
+        # only a genuine active state confirms generic wake/interrupt actions.
+        state_confirms = (
+            command and (
+                (command.action == 'sleep' and mode == 'sleep') or
+                (command.action in ('wake', 'interrupt') and mode == 'active')
+            )
+        )
+        if state_confirms:
             command.status = 'confirmed'
             command.detail = f'Robot reported mode: {mode}'
             command.save(update_fields=['status', 'detail', 'updated_at'])
@@ -457,7 +470,12 @@ class MoxieServer:
                 lambda future: self.on_device_state(device_id, msg) if future.result() else None
             )
             return
-        self._submit_worker(self.ingest_robot_state, device_id, json.loads(msg.payload))
+        self._submit_worker(
+            self.ingest_robot_state,
+            device_id,
+            json.loads(msg.payload),
+            executor=self._state_worker_queue,
+        )
 
     # Callback when a moxie config has changed and may need to be provided
     def handle_config_updated(self, device):

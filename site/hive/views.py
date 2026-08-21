@@ -29,7 +29,7 @@ import uuid
 import logging
 import re
 from collections import deque
-from datetime import date
+from datetime import date, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -628,6 +628,21 @@ def robot_control(request, pk):
     service = get_instance()
     online = service.robot_data().device_online(device.device_id)
     message = ''
+    duplicate = RobotCommandEvent.objects.filter(
+        device=device,
+        action=action,
+        status='sent',
+        created_at__gte=timezone.now() - timedelta(seconds=8),
+    ).order_by('-created_at').first()
+    if duplicate:
+        message = f'{duplicate.label or action.title()} is already in progress; waiting for Moxie to confirm it.'
+        if request.POST.get('ajax') == '1':
+            return JsonResponse({'ok': True, 'message': message, 'duplicate': True})
+        return redirect('hive:dashboard_alert', alert_message=message)
+    RobotCommandEvent.objects.filter(device=device, status='sent').update(
+        status='failed',
+        detail=f'Superseded by a newer {action} request.',
+    )
     if action in ('wake', 'chat', 'homework', 'trivia', 'jokes', 'interrupt'):
         target = action if action in ('homework', 'trivia', 'jokes') else 'chat'
         module_id = {

@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
+from django.conf import settings
 
 from .models import ConversationEvent, GlobalResponse, HiveConfiguration, Joke, MoxieDevice, MoxieSchedule, RobotCommandEvent, SinglePromptChat, TriviaQuestion
 from .mqtt.moxie_server import MoxieServer
@@ -17,9 +18,16 @@ from .mqtt.volley import Volley
 from .mqtt.conversation_log import record_conversation, safety_redirect
 from .mqtt.global_responses import GlobalResponses
 from .mqtt.scheduler import expand_schedule
+from .mqtt import ai_factory
 
 
 class MQTTServiceTests(SimpleTestCase):
+    def test_sqlite_is_configured_for_bounded_concurrent_writes(self):
+        options = settings.DATABASES['default']['OPTIONS']
+
+        self.assertEqual(options['timeout'], 10)
+        self.assertEqual(options['transaction_mode'], 'IMMEDIATE')
+
     def test_connect_is_async_and_starts_retry_loop(self):
         server = MoxieServer.__new__(MoxieServer)
         server._robot = SimpleNamespace(create_jwt=lambda project: "token")
@@ -108,6 +116,33 @@ class RobotStateTests(TestCase):
         }
 
         self.assertEqual(robot_data.connected_details()["d_live"]["mode"], "sleep")
+
+    def test_idle_does_not_prematurely_confirm_wake_transition(self):
+        device = MoxieDevice.objects.create(device_id='d_transition')
+        command = RobotCommandEvent.objects.create(
+            device=device, action='wake', label='Wake & Chat', status='sent',
+        )
+        server = MoxieServer.__new__(MoxieServer)
+        server._robot_data = MagicMock()
+        server._remote_chat = MagicMock()
+
+        server.ingest_robot_state(device.device_id, {'mode': 'idle'})
+        command.refresh_from_db()
+        self.assertEqual(command.status, 'sent')
+
+        server.ingest_robot_state(device.device_id, {'mode': 'active'})
+        command.refresh_from_db()
+        self.assertEqual(command.status, 'confirmed')
+
+    def test_remote_chat_activity_supplies_active_mode_fallback(self):
+        server = MagicMock()
+        remote = RemoteChat(server)
+
+        remote.handle_request('d_active', {
+            'command': 'notify', 'module_id': 'UNKNOWN', 'content_id': 'default',
+        }, {})
+
+        server.robot_data.return_value.note_mode.assert_called_once_with('d_active', 'active')
 
 
 class WakeControlTests(TestCase):
@@ -221,8 +256,67 @@ class WakeControlTests(TestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+    @patch("hive.views.get_instance")
+    def test_duplicate_transition_is_debounced(self, get_instance):
+        service = get_instance.return_value
+        service.robot_data.return_value.device_online.return_value = True
+
+        first = self.client.post(
+            reverse('hive:robot_control', args=[self.device.pk]),
+            {'action': 'wake', 'ajax': '1'},
+        )
+        service.reset_mock()
+        second = self.client.post(
+            reverse('hive:robot_control', args=[self.device.pk]),
+            {'action': 'wake', 'ajax': '1'},
+        )
+
+        self.assertEqual(first.status_code, 200)
+        self.assertTrue(second.json()['duplicate'])
+        self.assertEqual(RobotCommandEvent.objects.filter(action='wake').count(), 1)
+        service.queue_remote_action_to_bot.assert_not_called()
+
+    @patch("hive.views.get_instance")
+    def test_new_transition_supersedes_stale_sent_command(self, get_instance):
+        service = get_instance.return_value
+        service.robot_data.return_value.device_online.return_value = True
+        stale = RobotCommandEvent.objects.create(
+            device=self.device, action='homework', label='Start homework', status='sent',
+        )
+
+        response = self.client.post(
+            reverse('hive:robot_control', args=[self.device.pk]),
+            {'action': 'wake', 'ajax': '1'},
+        )
+
+        stale.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(stale.status, 'failed')
+        self.assertIn('Superseded', stale.detail)
+
 
 class LocalAIAndMissionTests(TestCase):
+    @patch.object(ai_factory._CHAT_HTTP_SESSION, 'post')
+    def test_lmstudio_respects_configured_output_limit(self, post):
+        ai_factory.configure_ai(
+            chat_provider='lmstudio',
+            chat_base_url='http://lmstudio.test/v1',
+            chat_model='local-model',
+        )
+        response = post.return_value
+        response.json.return_value = {
+            'output': [{'type': 'message', 'content': 'A short answer.'}],
+            'stats': {'input_tokens': 10, 'total_output_tokens': 4},
+        }
+
+        result = ai_factory.chat_completion(
+            [{'role': 'user', 'content': 'Hello'}], max_tokens=35,
+        )
+
+        self.assertEqual(result, 'A short answer.')
+        self.assertEqual(post.call_args.kwargs['json']['max_output_tokens'], 35)
+        self.assertEqual(post.call_args.kwargs['timeout'], (5, 90))
+
     @patch("hive.views.get_instance")
     def test_setup_saves_independent_local_chat_and_stt_choices(self, get_instance):
         response = self.client.post(reverse('hive:hive_configure'), {
@@ -260,6 +354,21 @@ class LocalAIAndMissionTests(TestCase):
 
         self.assertIn('Do not ask the person any questions', context)
         self.assertNotIn('End this response with one short, friendly question', context)
+
+    def test_persistent_memory_is_not_duplicated_after_session_starts(self):
+        session = SingleContextChatSession(prompt='Be concise.')
+        session.add_history('assistant', 'Current session response.')
+        volley = Volley.request_from_speech('Continue', device_id='test')
+        volley._robot_data = {
+            'persist': {'conversation_memory': {'recent': [
+                {'role': 'assistant', 'content': 'Old remembered response.'},
+            ]}},
+            'conversation_memory_enabled': True,
+        }
+
+        context = session.make_volley_context(volley)[0]['content']
+
+        self.assertNotIn('Old remembered response', context)
 
     def test_homework_solves_spoken_arithmetic_without_ai(self):
         homework = SinglePromptChat.objects.get(

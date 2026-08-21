@@ -238,6 +238,10 @@ class RemoteChat:
     def handle_request(self, device_id, rcr, volley_data):
         if _LOG_ALL_RCR:
             logger.info(f"RemoteChatRequest\n{rcr}")
+        # Some firmware resumes Remote Chat after a server reconnect without
+        # publishing /state again. A real router request proves the robot is
+        # awake, so keep the live mode from remaining stuck at "connecting".
+        self._server.robot_data().note_mode(device_id, 'active')
         id = rcr.get('module_id', '') + '/' + rcr.get('content_id', '')
         cmd = rcr.get('command')
         self._clear_completed_launch(device_id, rcr)
