@@ -10,13 +10,15 @@ For conversation AI, choose either OpenAI API access with available credits or L
 
 1. Clone or download this repository.
 2. Open a terminal in the repository directory.
-3. Run `docker compose up --build -d`.
+3. On Windows, double-click `start-openmoxie.bat`. On other systems, run `docker compose up --build -d --remove-orphans`.
 4. Open `http://localhost:8001/hive`.
 5. Complete Setup. Use your computer's stable LAN IP if Moxie cannot resolve its hostname.
 6. Open Migration QR in the Control Center and show it to Moxie.
 7. Wait for the robot card to report Online before sending an activity.
 
 Persistent state is stored in `local/work`, including the SQLite database, logs, downloaded local speech models, and transcript text files. Back up this directory before upgrading.
+
+After the first setup, the two OpenMoxie containers restart automatically whenever Docker Desktop starts. They are the only required containers: `openmoxie-mqtt` and `openmoxie-server`.
 
 ## Local AI
 

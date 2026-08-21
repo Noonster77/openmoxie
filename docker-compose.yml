@@ -1,7 +1,11 @@
 
+name: openmoxie
+
 services:
 
   mqtt:
+    container_name: openmoxie-mqtt
+    restart: unless-stopped
     build:
       context: ./
       dockerfile: ./mqtt.Dockerfile
@@ -15,6 +19,8 @@ services:
       - ./local/work:/mosquitto/log
 
   server:
+    container_name: openmoxie-server
+    restart: unless-stopped
     build:
       context: ./
       dockerfile: ./Dockerfile
@@ -27,4 +33,5 @@ services:
     volumes:
       - ./local/work:/app/site/work
     depends_on:
-      - mqtt
+      mqtt:
+        condition: service_started

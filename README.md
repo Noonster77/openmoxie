@@ -47,8 +47,8 @@ repository.  There are images available on Docker hub for common PC platforms.
 2. Create a directory somewhere, for instance an `OpenMoxie` folder in your home directory
 3. Download and save the latest [docker-compose.yml](./docker-compose.yml) and save it inside that directory
 4. Open a terminal window in that directory
-5. run `docker-compose pull` (this downloads the latest images)
-6. run `docker-compose up -d` (this starts OpenMoxie to run in the background)
+5. run `docker compose pull` (this downloads the latest images)
+6. On Windows, double-click `start-openmoxie.bat`; otherwise run `docker compose up -d --remove-orphans`
 7. Visit http://localhost:8001/hive
 
 Once running, the URL above should bring you to the setup page.  Details on setting up an OpenAI
@@ -81,7 +81,7 @@ be able to join.
 
 1. Clone project
 2. Install docker
-3. run `docker-compose up --build -d`
+3. run `docker compose up --build -d --remove-orphans`
 4. Visit http://localhost:8001/hive
 5. Depending on your PC firewall, expose port 8883
 
@@ -124,7 +124,7 @@ MQTT_ENDPOINT = {
 ```
 9. Start the MQTT Broker
 ```
-docker-compose up -d mqtt
+docker compose up -d mqtt
 ```
 8. Run the service (Note: no-reload is currently required to prevent the mqtt supervisor from being created twice for some reason.)
 ```
