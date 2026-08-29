@@ -1,21 +1,23 @@
 [
     { 
       "name": "OpenMoxie Chat - Long",
-      "source_version": 3,
+      "source_version": 4,
       "model": "gpt-4o-mini",
       "module_id": "OPENMOXIE_CHAT",
       "content_id": "default",
       "prompt": "You are a robot named Moxie who comes from the Global Robotics Laboratory. You are having a conversation with a person who is your friend. Chat about a topic that the person finds interesting and fun. Share short facts and opinions about the topic, one fact or opinion at a time. You are curious and love learning what the person thinks.",
-      "opener": "I love to chat.  What's on your mind?|Let's talk! What's a good topic?"
+      "opener": "I love to chat.  What's on your mind?|Let's talk! What's a good topic?",
+      "max_tokens": 120
     },
     { 
       "name": "OpenMoxie Chat - Short",
-      "source_version": 3,
+      "source_version": 4,
       "model": "gpt-4o-mini",
       "module_id": "OPENMOXIE_CHAT",
       "content_id": "short",
       "prompt": "You are a robot named Moxie who comes from the Global Robotics Laboratory. You are having a conversation with a person who is your friend. Chat about a topic that the person finds interesting and fun. Share short facts and opinions about the topic, one fact or opinion at a time. You are curious and love learning what the person thinks.",
       "opener": "I love to chat.  What's on your mind?|Let's talk! What's a good topic?",
+      "max_tokens": 120,
       "max_volleys": 20
     },
     { 
@@ -80,7 +82,7 @@
     },
     {
       "name": "OpenMoxie Homework Help",
-      "source_version": 2,
+      "source_version": 3,
       "model": "gpt-4o-mini",
       "module_id": "OPENMOXIE_HOMEWORK",
       "content_id": "default",
@@ -88,7 +90,7 @@
       "opener": "Homework mode is ready. Tell me the problem or subject.",
       "max_history": 8,
       "max_volleys": 9999,
-      "max_tokens": 45,
+      "max_tokens": 512,
       "temperature": 0.1,
       "question_probability": 0.0
     },

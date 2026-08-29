@@ -315,7 +315,29 @@ class LocalAIAndMissionTests(TestCase):
 
         self.assertEqual(result, 'A short answer.')
         self.assertEqual(post.call_args.kwargs['json']['max_output_tokens'], 35)
+        self.assertEqual(post.call_args.kwargs['json']['reasoning'], 'off')
         self.assertEqual(post.call_args.kwargs['timeout'], (5, 90))
+
+    @patch.object(ai_factory._CHAT_HTTP_SESSION, 'post')
+    def test_lmstudio_accepts_homework_reasoning_mode(self, post):
+        ai_factory.configure_ai(
+            chat_provider='lmstudio',
+            chat_base_url='http://lmstudio.test/v1',
+            chat_model='local-model',
+        )
+        post.return_value.json.return_value = {
+            'output': [{'type': 'message', 'content': 'The answer is 42.'}],
+        }
+
+        ai_factory.chat_completion(
+            [{'role': 'user', 'content': 'Solve it'}],
+            max_tokens=512,
+            reasoning='on',
+        )
+
+        payload = post.call_args.kwargs['json']
+        self.assertEqual(payload['max_output_tokens'], 512)
+        self.assertEqual(payload['reasoning'], 'on')
 
     @patch("hive.views.get_instance")
     def test_setup_saves_independent_local_chat_and_stt_choices(self, get_instance):
@@ -385,6 +407,22 @@ class LocalAIAndMissionTests(TestCase):
 
         self.assertEqual(volley.response['output']['text'], '32.')
         completion.assert_not_called()
+
+    def test_homework_uses_larger_budget_and_reasoning(self):
+        homework = SinglePromptChat.objects.get(
+            module_id='OPENMOXIE_HOMEWORK', content_id='default'
+        )
+        session = HomeworkChatSession(homework.pk)
+        volley = Volley.request_from_speech(
+            'Explain why the quadratic formula works.', device_id='test',
+            module_id='OPENMOXIE_HOMEWORK', content_id='default',
+        )
+
+        with patch('hive.mqtt.conversations.chat_completion', return_value='It follows by completing the square.') as completion:
+            session.handle_volley(volley)
+
+        self.assertEqual(completion.call_args.kwargs['max_tokens'], 512)
+        self.assertEqual(completion.call_args.kwargs['reasoning'], 'on')
 
     def test_homework_removes_questions_and_extra_offers(self):
         homework = SinglePromptChat.objects.get(

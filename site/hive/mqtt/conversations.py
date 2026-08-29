@@ -103,6 +103,7 @@ class SingleContextChatSession(ChatSession):
                  max_tokens=70,
                  temperature=0.5,
                  question_probability=0.35,
+                 reasoning='off',
                  exit_line="Well, that was fun.  Let's move on."
                  ):
         super().__init__(max_history)
@@ -115,6 +116,7 @@ class SingleContextChatSession(ChatSession):
         self._max_tokens = max_tokens
         self._temperature = temperature
         self._question_probability = max(0.0, min(1.0, question_probability))
+        self._reasoning = reasoning
         self._exit_line = exit_line
         self._auto_history = False
         self._pre_filter = None
@@ -244,6 +246,7 @@ class SingleContextChatSession(ChatSession):
                 fallback_model=self._model,
                 max_tokens=self._max_tokens,
                 temperature=self._temperature,
+                reasoning=self._reasoning,
             )
         except Exception as e:
             logger.warning(f'Exception attempting inference: {e}')
@@ -283,6 +286,7 @@ class SingleContextChatSession(ChatSession):
                 fallback_model=model,
                 max_tokens=max_tokens,
                 temperature=self._temperature,
+                reasoning=self._reasoning,
             )
             return resp
         except Exception as e:
@@ -343,9 +347,10 @@ class HomeworkChatSession(SinglePromptDBChatSession):
 
     def __init__(self, pk):
         super().__init__(pk)
-        self._max_tokens = min(self._max_tokens, 45)
+        self._max_tokens = max(self._max_tokens, 512)
         self._temperature = 0.1
         self._question_probability = 0.0
+        self._reasoning = 'on'
 
     @classmethod
     def _words_to_number(cls, text):

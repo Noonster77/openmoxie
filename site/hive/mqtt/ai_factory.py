@@ -42,7 +42,8 @@ def create_chat_client():
 def get_chat_model(fallback=None):
     return _CHAT_MODEL or fallback or 'gpt-4o-mini'
 
-def chat_completion(messages, fallback_model=None, max_tokens=70, temperature=0.5):
+def chat_completion(messages, fallback_model=None, max_tokens=70, temperature=0.5,
+                    reasoning='off'):
     """Return text from OpenAI or LM Studio, using LM Studio's native API to control reasoning."""
     model = get_chat_model(fallback_model)
     if _CHAT_PROVIDER == 'lmstudio':
@@ -62,7 +63,7 @@ def chat_completion(messages, fallback_model=None, max_tokens=70, temperature=0.
             # minimum almost doubled ordinary 70-token turns on a local model.
             'max_output_tokens': max(1, int(max_tokens)),
             'temperature': temperature,
-            'reasoning': 'off',
+            'reasoning': reasoning,
         }, timeout=(5, 90))
         response.raise_for_status()
         payload = response.json()
