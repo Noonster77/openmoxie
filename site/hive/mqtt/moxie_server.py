@@ -11,7 +11,7 @@ import base64
 import ssl
 import threading
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from .ai_factory import set_openai_key, configure_ai
 from .robot_credentials import RobotCredentials
 from .robot_data import RobotData
@@ -426,6 +426,7 @@ class MoxieServer:
                 sub.timestamp = now_ms()
                 logger.debug('Subscribed to ZMQ STT')
                 self.send_zmq_to_bot(device_id, sub)
+                self._resume_pending_command(device_id)
                 return True
             except Exception:
                 # Do not leave an empty cache entry marking a failed initialization
@@ -498,6 +499,44 @@ class MoxieServer:
                 logger.info("Wake command queued for %s", device_id)
                 return True
         return False
+
+    def _resume_pending_command(self, device_id):
+        """Deliver the newest durable dashboard request after Moxie reconnects."""
+        command = RobotCommandEvent.objects.filter(
+            device__device_id=device_id,
+            status__in=('queued', 'sent'),
+            created_at__gte=datetime.now(timezone.utc) - timedelta(minutes=30),
+        ).order_by('-created_at').first()
+        if not command:
+            return False
+        target = command.action if command.action in ('homework', 'trivia', 'jokes') else 'chat'
+        module_id = {
+            'chat': 'OPENMOXIE_CHAT',
+            'homework': 'OPENMOXIE_HOMEWORK',
+            'trivia': 'OPENMOXIE_TRIVIA',
+            'jokes': 'OPENMOXIE_JOKES',
+        }.get(target)
+        if not module_id:
+            command.status = 'failed'
+            command.detail = 'This queued command cannot be resumed automatically.'
+            command.save(update_fields=['status', 'detail', 'updated_at'])
+            return False
+        text = {
+            'chat': "I'm listening. What would you like to talk about?",
+            'homework': 'Homework mode is ready. Tell me the problem or subject.',
+            'trivia': 'Trivia time! Get your thinking cap ready.',
+            'jokes': "Joke time! I've got some good ones ready.",
+        }[target]
+        self.queue_remote_action_to_bot(device_id, 'launch', module_id, 'default', text)
+        self.send_telehealth_interrupt(device_id)
+        if not self.send_wakeup_to_bot(device_id):
+            logger.warning('Pending %s command remains pending for %s', command.action, device_id)
+            return False
+        command.status = 'sent'
+        command.detail = f'{command.label or command.action.title()} resumed after Moxie reconnected; waiting for confirmation.'
+        command.save(update_fields=['status', 'detail', 'updated_at'])
+        logger.info('Resumed pending %s command for %s', command.action, device_id)
+        return True
 
     def send_remote_action_to_bot(self, device_id, action, module_id=None, content_id=None, text='Okay.'):
         """Best-effort immediate router action; queued schedule remains the fallback."""

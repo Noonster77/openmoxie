@@ -631,7 +631,7 @@ def robot_control(request, pk):
     duplicate = RobotCommandEvent.objects.filter(
         device=device,
         action=action,
-        status='sent',
+        status__in=('sent', 'queued'),
         created_at__gte=timezone.now() - timedelta(seconds=8),
     ).order_by('-created_at').first()
     if duplicate:
@@ -639,7 +639,7 @@ def robot_control(request, pk):
         if request.POST.get('ajax') == '1':
             return JsonResponse({'ok': True, 'message': message, 'duplicate': True})
         return redirect('hive:dashboard_alert', alert_message=message)
-    RobotCommandEvent.objects.filter(device=device, status='sent').update(
+    RobotCommandEvent.objects.filter(device=device, status__in=('sent', 'queued')).update(
         status='failed',
         detail=f'Superseded by a newer {action} request.',
     )
@@ -681,7 +681,9 @@ def robot_control(request, pk):
         else:
             sent = False
         message = 'Sleep requested. Waiting for Moxie to report sleep; voice fallback: “Go to sleep, please.”' if sent else 'Moxie is offline; no sleep command was sent.'
-    command_status = 'sent' if online else 'failed'
+    command_status = 'sent' if online else (
+        'queued' if action in ('wake', 'chat', 'homework', 'trivia', 'jokes', 'interrupt') else 'failed'
+    )
     RobotCommandEvent.objects.create(
         device=device, action=action, label={
             'wake': 'Wake & Chat', 'chat': 'Start chat', 'homework': 'Start homework',

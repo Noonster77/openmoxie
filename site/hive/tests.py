@@ -144,6 +144,42 @@ class RobotStateTests(TestCase):
 
         server.robot_data.return_value.note_mode.assert_called_once_with('d_active', 'active')
 
+    def test_queued_wake_is_resumed_when_robot_reconnects(self):
+        device = MoxieDevice.objects.create(device_id='d_reconnect')
+        command = RobotCommandEvent.objects.create(
+            device=device, action='wake', label='Wake & Chat', status='queued',
+        )
+        server = MoxieServer.__new__(MoxieServer)
+        server.queue_remote_action_to_bot = MagicMock(return_value=True)
+        server.send_telehealth_interrupt = MagicMock()
+        server.send_wakeup_to_bot = MagicMock(return_value=True)
+
+        self.assertTrue(server._resume_pending_command(device.device_id))
+
+        command.refresh_from_db()
+        self.assertEqual(command.status, 'sent')
+        self.assertIn('resumed after Moxie reconnected', command.detail)
+        server.queue_remote_action_to_bot.assert_called_once_with(
+            device.device_id, 'launch', 'OPENMOXIE_CHAT', 'default',
+            "I'm listening. What would you like to talk about?",
+        )
+
+    def test_recent_sent_wake_is_replayed_after_server_restart(self):
+        device = MoxieDevice.objects.create(device_id='d_server_restart')
+        command = RobotCommandEvent.objects.create(
+            device=device, action='wake', label='Wake & Chat', status='sent',
+        )
+        server = MoxieServer.__new__(MoxieServer)
+        server.queue_remote_action_to_bot = MagicMock(return_value=True)
+        server.send_telehealth_interrupt = MagicMock()
+        server.send_wakeup_to_bot = MagicMock(return_value=True)
+
+        self.assertTrue(server._resume_pending_command(device.device_id))
+
+        command.refresh_from_db()
+        self.assertEqual(command.status, 'sent')
+        self.assertIn('resumed after Moxie reconnected', command.detail)
+
 
 class WakeControlTests(TestCase):
     def setUp(self):
@@ -255,6 +291,21 @@ class WakeControlTests(TestCase):
             {'action': 'stop'},
         )
         self.assertEqual(response.status_code, 400)
+
+    @patch("hive.views.get_instance")
+    def test_offline_wake_is_durably_queued(self, get_instance):
+        service = get_instance.return_value
+        service.robot_data.return_value.device_online.return_value = False
+
+        response = self.client.post(
+            reverse('hive:robot_control', args=[self.device.pk]),
+            {'action': 'wake', 'ajax': '1'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        command = RobotCommandEvent.objects.get(action='wake')
+        self.assertEqual(command.status, 'queued')
+        self.assertIn('queued for the next connection', command.detail)
 
     @patch("hive.views.get_instance")
     def test_duplicate_transition_is_debounced(self, get_instance):
