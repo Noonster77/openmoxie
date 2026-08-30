@@ -523,6 +523,10 @@ class ReasoningChatSession(SinglePromptDBChatSession):
         'The fingerprints of a koala can look surprisingly similar to human fingerprints.',
     ]
     _executor = ThreadPoolExecutor(max_workers=3, thread_name_prefix='moxie-reasoning')
+    THINKING_MUSIC = (
+        "My totally unofficial thinking-show music goes: doo doo doo, doo doo doo. Suspenseful, right?",
+        "Cue my original robot thinking music: beep boop, doo doo, dramatic pause!",
+    )
 
     def __init__(self, pk):
         super().__init__(pk)
@@ -530,6 +534,7 @@ class ReasoningChatSession(SinglePromptDBChatSession):
         self._pending_question = ''
         self._last_fact = ''
         self._used_interludes = set()
+        self._interlude_count = 0
 
     def _fact(self):
         choices = [fact for fact in self.FACTS if fact != self._last_fact]
@@ -562,6 +567,13 @@ class ReasoningChatSession(SinglePromptDBChatSession):
             return text
         return f'Fun fact: {self._fact()}'
 
+    def _next_waiting_interlude(self, device_id):
+        """Rotate content while reasoning, using music only after six fresh breaks."""
+        self._interlude_count += 1
+        if self._interlude_count > 6 and (self._interlude_count - 7) % 4 == 0:
+            return random.choice(self.THINKING_MUSIC)
+        return self._interlude(device_id)
+
     def _answer(self, messages, model, max_tokens, effort):
         return chat_completion(
             messages, fallback_model=self._model, model_override=model or self._model or None,
@@ -574,16 +586,15 @@ class ReasoningChatSession(SinglePromptDBChatSession):
         if command == 'prompt':
             self._pending = None
             self._pending_question = ''
+            self._interlude_count = 0
+            self._used_interludes.clear()
             text, _ = self.get_opener()
             volley.set_output(text, None)
             return
 
         if self._pending is not None:
             if not self._pending.done():
-                volley.set_output(
-                    f"I am still working through it. {self._interlude(volley.device_id)} Ask if it is ready in a little while.",
-                    None,
-                )
+                volley.set_output(self._next_waiting_interlude(volley.device_id), None)
                 return
             try:
                 answer = self._pending.result()
@@ -610,9 +621,11 @@ class ReasoningChatSession(SinglePromptDBChatSession):
         messages = self.make_volley_context(volley) + copy.deepcopy(self._history)
         messages.append({'role': 'user', 'content': speech})
         self._pending_question = speech
+        self._interlude_count = 0
+        self._used_interludes.clear()
         self._pending = self._executor.submit(self._answer, messages, model, max_tokens, effort)
         volley.set_output(
-            f"I am thinking carefully in the background. {self._interlude(volley.device_id)} Ask, is it ready, after a little while.",
+            f"I am thinking carefully in the background. {self._next_waiting_interlude(volley.device_id)}",
             None,
         )
 

@@ -58,7 +58,7 @@ A Wi-Fi check mark alone does not prove Moxie reached OpenMoxie. The Control Cen
 
 1. Select **Wake & Chat**, then ask a short question.
 2. Select **Homework** and try a basic calculation.
-3. Select **Reason** and ask a complex question. Moxie will give an enabled fact or joke while the answer runs in the background. Say “Is it ready?” to poll it.
+3. Select **Reason** and ask a complex question. Moxie will rotate through at least six enabled facts or jokes while the answer runs in the background, without repeatedly asking you to check whether it is ready.
 4. Open **Trivia** and **Jokes** settings to enable or disable whole categories.
 5. Try a knock-knock joke. Wait for all three turns: “Knock knock,” “Who’s there?”, then “Name who?”
 6. Open **Live monitor** to see commands and conversation events.

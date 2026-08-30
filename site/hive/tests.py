@@ -410,6 +410,34 @@ class LocalAIAndMissionTests(TestCase):
         self.assertEqual(payload['max_output_tokens'], 512)
         self.assertEqual(payload['reasoning'], 'on')
 
+    @patch.object(ai_factory._CHAT_HTTP_SESSION, 'post')
+    def test_lmstudio_retries_without_reasoning_when_no_spoken_answer_is_returned(self, post):
+        ai_factory.configure_ai(
+            chat_provider='lmstudio',
+            chat_base_url='http://lmstudio.test/v1',
+            chat_model='local-model',
+        )
+        hidden_only = SimpleNamespace()
+        hidden_only.raise_for_status = MagicMock()
+        hidden_only.json = MagicMock(return_value={
+            'output': [{'type': 'reasoning', 'content': 'Hidden work only.'}],
+        })
+        spoken = SimpleNamespace()
+        spoken.raise_for_status = MagicMock()
+        spoken.json = MagicMock(return_value={
+            'output': [{'type': 'message', 'content': 'The spoken fallback answer.'}],
+        })
+        post.side_effect = [hidden_only, spoken]
+
+        result = ai_factory.chat_completion(
+            [{'role': 'user', 'content': 'Solve it'}], max_tokens=1200, reasoning='high',
+        )
+
+        self.assertEqual(result, 'The spoken fallback answer.')
+        self.assertEqual(post.call_count, 2)
+        self.assertEqual(post.call_args_list[0].kwargs['json']['reasoning'], 'on')
+        self.assertEqual(post.call_args_list[1].kwargs['json']['reasoning'], 'off')
+
     @patch("hive.views.get_instance")
     def test_setup_saves_independent_local_chat_and_stt_choices(self, get_instance):
         response = self.client.post(reverse('hive:hive_configure'), {
@@ -820,14 +848,43 @@ class ParentSafetyAndVoiceTests(TestCase):
             session.handle_volley(question)
 
         self.assertIn('enabled database category', question.response['output']['text'])
+        self.assertNotIn('is it ready', question.response['output']['text'].lower())
         self.assertEqual(submit.call_args.args[2:], ('custom/reasoner', 2048, 'high'))
         waiting = Volley.request_from_speech('Is it ready?', device_id=self.device.device_id)
         session.handle_volley(waiting)
-        self.assertIn('still working', waiting.response['output']['text'])
+        self.assertNotIn('is it ready', waiting.response['output']['text'].lower())
+        self.assertNotEqual(question.response['output']['text'], waiting.response['output']['text'])
         pending.set_result('The careful answer is forty-two.')
         ready = Volley.request_from_speech('Is it ready?', device_id=self.device.device_id)
         session.handle_volley(ready)
         self.assertIn('careful answer is forty-two', ready.response['output']['text'])
+
+    def test_reasoning_uses_six_interludes_before_original_thinking_music(self):
+        self.device.reasoning_interludes = 'facts'
+        self.device.trivia_categories = ['Reasoning facts']
+        self.device.save(update_fields=['reasoning_interludes', 'trivia_categories'])
+        for number in range(7):
+            TriviaQuestion.objects.create(
+                category='Reasoning facts', question=f'Test {number}?', accepted_answers=['yes'],
+                fun_fact=f'Waiting fact number {number}.',
+            )
+        source = SinglePromptChat.objects.get(module_id='OPENMOXIE_REASONING', content_id='default')
+        session = ReasoningChatSession(source.pk)
+        pending = Future()
+
+        with patch.object(session._executor, 'submit', return_value=pending):
+            outputs = []
+            first = Volley.request_from_speech('Solve a complex problem', device_id=self.device.device_id)
+            session.handle_volley(first)
+            outputs.append(first.response['output']['text'])
+            for _ in range(6):
+                waiting = Volley.request_from_speech('Keep going', device_id=self.device.device_id)
+                session.handle_volley(waiting)
+                outputs.append(waiting.response['output']['text'])
+
+        self.assertEqual(len(set(outputs[:6])), 6)
+        self.assertTrue('thinking-show music' in outputs[6] or 'thinking music' in outputs[6])
+        self.assertNotIn('ask if it is ready', ' '.join(outputs).lower())
 
     def test_disabling_all_trivia_categories_disables_the_game(self):
         self.device.trivia_categories = []

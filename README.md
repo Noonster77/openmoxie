@@ -11,7 +11,7 @@ This repository is a community fork of [Justin Beghtol’s original OpenMoxie pr
 - A cohesive Control Center, mobile navigation, Parent Corner, Live Room, command acknowledgements, recovery controls, and clearer setup diagnostics.
 - OpenAI, OpenRouter, LM Studio, local faster-whisper, and arbitrary OpenAI-compatible chat servers. LM Studio accepts the exact identifier of any model it can load.
 - Configurable conversation models, prompts, history, temperature, and output-token budgets in **Advanced → Single prompt chats**.
-- A button- and voice-activated reasoning mode for complex questions. Long inference runs in the background while Moxie rotates through enabled facts and jokes; ask “Is it ready?” to check the answer.
+- A button- and voice-activated reasoning mode for complex questions. Long inference runs in the background while Moxie rotates through at least six enabled facts or jokes, then adds playful original thinking-show music if more time is needed.
 - Fast homework help, conversation memory and local transcripts, family speaker profiles, privacy deletion, and conservative parent-review flags.
 - Editable, selectable joke and trivia collections. Knock-knock jokes now pause for “Who’s there?” and “Name who?” before delivering the punchline.
 - More than 100 family jokes and an expanded no-repeat trivia library with 100 additional reviewed questions in each of six categories.
@@ -102,7 +102,7 @@ The Control Center can start Chat, Homework, Reasoning, Trivia, Jokes, and Sleep
 - “Talk about something else.”
 - “Go to sleep, please.”
 
-Reasoning answers may take two or three minutes on a large local model. Moxie returns immediately with a fact or joke so the robot does not time out; say “Is it ready?” until the completed answer is available.
+Reasoning answers may take two or three minutes on a large local model. Moxie returns immediately with a fact or joke and advances to a fresh waiting interlude on each follow-up until the completed answer is available.
 
 ## Safety and privacy
 

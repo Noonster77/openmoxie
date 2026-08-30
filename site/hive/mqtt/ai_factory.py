@@ -61,7 +61,7 @@ def chat_completion(messages, fallback_model=None, max_tokens=70, temperature=0.
         native_root = _CHAT_BASE_URL[:-3] if _CHAT_BASE_URL.endswith('/v1') else _CHAT_BASE_URL
         native_url = native_root.rstrip('/') + '/api/v1/chat'
         started = time.monotonic()
-        response = _CHAT_HTTP_SESSION.post(native_url, json={
+        request_payload = {
             'model': model,
             'system_prompt': system_prompt,
             'input': transcript,
@@ -70,11 +70,23 @@ def chat_completion(messages, fallback_model=None, max_tokens=70, temperature=0.
             'max_output_tokens': max(1, int(max_tokens)),
             'temperature': temperature,
             'reasoning': 'on' if reasoning in ('on', 'low', 'medium', 'high') else 'off',
-        }, timeout=(5, 180))
+        }
+        response = _CHAT_HTTP_SESSION.post(native_url, json=request_payload, timeout=(5, 180))
         response.raise_for_status()
         payload = response.json()
         output = payload.get('output', [])
         text = ''.join(item.get('content', '') for item in output if item.get('type') == 'message').strip()
+        if not text and request_payload['reasoning'] == 'on':
+            # Some local reasoning models can consume the entire output budget
+            # on hidden thoughts and return no message. Retry once without hidden
+            # reasoning so the robot receives a spoken answer instead of failing.
+            logger.warning('LM Studio returned reasoning without a spoken answer; retrying with reasoning off')
+            retry_payload = dict(request_payload, reasoning='off')
+            response = _CHAT_HTTP_SESSION.post(native_url, json=retry_payload, timeout=(5, 180))
+            response.raise_for_status()
+            payload = response.json()
+            output = payload.get('output', [])
+            text = ''.join(item.get('content', '') for item in output if item.get('type') == 'message').strip()
         if not text:
             raise ValueError('LM Studio returned no spoken message content')
         stats = payload.get('stats', {})

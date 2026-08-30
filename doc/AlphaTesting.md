@@ -11,7 +11,7 @@ Test with an adult present and keep the service on a trusted home network.
 5. Enable one trivia category, then none, then all. Confirm the saved selection changes the actual game pool and selecting none produces the disabled-content message.
 6. Enable one joke collection, then none, then all. Confirm the spoken mix changes and no joke repeats during one run.
 7. Start a knock-knock joke. Confirm Moxie says “Knock, knock,” waits for “Who’s there?”, says the name, waits for “Name who?”, and only then gives the punchline.
-8. Start Reasoning and ask a complex question. Confirm Moxie immediately speaks an enabled fact or non-knock-knock joke. Ask “Is it ready?” until the background answer returns. Repeat with Facts, Jokes, and Mixed.
+8. Start Reasoning and ask a complex question. Confirm Moxie immediately speaks an enabled fact or non-knock-knock joke, advances through six non-repeating interludes without saying “ask if it is ready,” and uses original thinking-show music if the answer still is not complete. Repeat with Facts, Jokes, and Mixed.
 9. In Advanced, change the chat or homework output-token limit. Save, start a new session, and confirm the live request uses the new value.
 10. Review Conversation Privacy. Delete one entry, one day, and—with disposable test data only—all history. Confirm downloads match the screen.
 11. Resize the browser or use a phone. Confirm Menu reaches every primary section and every button has an understandable result.
