@@ -347,10 +347,16 @@ class HomeworkChatSession(SinglePromptDBChatSession):
 
     def __init__(self, pk):
         super().__init__(pk)
-        self._max_tokens = max(self._max_tokens, 512)
+        # Moxie reprompts after roughly 20 seconds.  Local reasoning models can
+        # spend the entire output budget on hidden reasoning and return no
+        # spoken message before that deadline, so homework responses must use
+        # the fast path.  Keep enough context and output room for multi-step
+        # homework while avoiding a runaway local-model generation.
+        self._max_history = max(self._max_history, 16)
+        self._max_tokens = 224
         self._temperature = 0.1
         self._question_probability = 0.0
-        self._reasoning = 'on'
+        self._reasoning = 'off'
 
     @classmethod
     def _words_to_number(cls, text):
@@ -444,6 +450,34 @@ class HomeworkChatSession(SinglePromptDBChatSession):
             rendered = str(value)
         return f'{rendered}.'
 
+    @classmethod
+    def solve_travel_time(cls, speech):
+        """Handle common distance/rate homework without waiting for the LLM."""
+        lowered = speech.lower().replace(',', '')
+        if not re.search(r'how long .*?(?:reach|get to|travel to) (?:the )?sun', lowered):
+            return None
+        speed_match = re.search(
+            r'(\d+(?:\.\d+)?|(?:[a-z]+(?:[- ][a-z]+)*))\s*'
+            r'(?:miles? per hour|mph)\b',
+            lowered,
+        )
+        if not speed_match:
+            return None
+        speed_text = speed_match.group(1)
+        try:
+            speed = float(speed_text)
+        except ValueError:
+            normalized = cls._words_to_number(speed_text)
+            if normalized is None:
+                return None
+            speed = float(normalized)
+        if speed <= 0:
+            return None
+        # Mean Earth-Sun distance, rounded appropriately for a spoken answer.
+        years = 93_000_000 / speed / 24 / 365.25
+        rendered = f'{years:.1f}'.rstrip('0').rstrip('.')
+        return f'About {rendered} years, assuming a straight trip across the Sun\'s average distance of 93 million miles.'
+
     @staticmethod
     def concise_answer(text):
         sentences = re.split(r'(?<=[.!?])\s+|\n+', (text or '').strip())
@@ -464,9 +498,9 @@ class HomeworkChatSession(SinglePromptDBChatSession):
         return concise.replace('?', '.')
 
     def next_response(self, speech, context):
-        arithmetic = self.solve_arithmetic(speech)
-        if arithmetic is not None:
-            return arithmetic, self.overflow()
+        local_answer = self.solve_arithmetic(speech) or self.solve_travel_time(speech)
+        if local_answer is not None:
+            return local_answer, self.overflow()
         response, overflow = super().next_response(speech, context)
         return self.concise_answer(response), overflow
 

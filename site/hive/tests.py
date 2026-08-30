@@ -459,7 +459,26 @@ class LocalAIAndMissionTests(TestCase):
         self.assertEqual(volley.response['output']['text'], '32.')
         completion.assert_not_called()
 
-    def test_homework_uses_larger_budget_and_reasoning(self):
+    def test_homework_solves_sun_travel_time_without_ai(self):
+        homework = SinglePromptChat.objects.get(
+            module_id='OPENMOXIE_HOMEWORK', content_id='default'
+        )
+        session = HomeworkChatSession(homework.pk)
+        volley = Volley.request_from_speech(
+            "How long would it take to reach the sun if you're going 500 miles per hour?",
+            device_id='test', module_id='OPENMOXIE_HOMEWORK', content_id='default',
+        )
+
+        with patch('hive.mqtt.conversations.chat_completion') as completion:
+            session.handle_volley(volley)
+
+        self.assertEqual(
+            volley.response['output']['text'],
+            "About 21.2 years, assuming a straight trip across the Sun's average distance of 93 million miles.",
+        )
+        completion.assert_not_called()
+
+    def test_homework_uses_bounded_budget_without_slow_reasoning(self):
         homework = SinglePromptChat.objects.get(
             module_id='OPENMOXIE_HOMEWORK', content_id='default'
         )
@@ -472,8 +491,9 @@ class LocalAIAndMissionTests(TestCase):
         with patch('hive.mqtt.conversations.chat_completion', return_value='It follows by completing the square.') as completion:
             session.handle_volley(volley)
 
-        self.assertEqual(completion.call_args.kwargs['max_tokens'], 512)
-        self.assertEqual(completion.call_args.kwargs['reasoning'], 'on')
+        self.assertEqual(session._max_history, 16)
+        self.assertEqual(completion.call_args.kwargs['max_tokens'], 224)
+        self.assertEqual(completion.call_args.kwargs['reasoning'], 'off')
 
     def test_homework_removes_questions_and_extra_offers(self):
         homework = SinglePromptChat.objects.get(

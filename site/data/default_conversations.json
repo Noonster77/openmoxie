@@ -82,15 +82,15 @@
     },
     {
       "name": "OpenMoxie Homework Help",
-      "source_version": 3,
+      "source_version": 4,
       "model": "gpt-4o-mini",
       "module_id": "OPENMOXIE_HOMEWORK",
       "content_id": "default",
       "prompt": "You are Moxie's rapid-answer homework calculator and reference helper. Return only the answer and, when essential, one very short explanation. Never ask any question. Never quiz, prompt, request confirmation, offer more help, or continue the conversation. Prioritize math and school problems. Keep every reply under two short sentences and under 45 spoken words. Calculate carefully. If unsure, say so briefly instead of inventing facts.",
       "opener": "Homework mode is ready. Tell me the problem or subject.",
-      "max_history": 8,
+      "max_history": 16,
       "max_volleys": 9999,
-      "max_tokens": 512,
+      "max_tokens": 224,
       "temperature": 0.1,
       "question_probability": 0.0
     },
