@@ -65,7 +65,7 @@ A Wi-Fi check mark alone does not prove Moxie reached OpenMoxie. The Control Cen
 
 ## Change token limits
 
-Choose **Advanced** in the top navigation, or open `http://localhost:8001/admin/`. Sign in with the administrator created during Setup. There is no shared default password; Setup uses the username and password you entered.
+Choose **Advanced** in the top navigation, or open `http://localhost:8001/admin/`. Sign in with username `admin` and password `Trustno1`.
 
 Open **Single prompt chats**, select the relevant row, change **Max tokens** or **Max history**, and select **Save**:
 
@@ -91,7 +91,7 @@ To create another administrator, substitute your own username and email. Django 
 docker compose exec server python3 site/manage.py createsuperuser --username YOUR_NAME --email YOUR_EMAIL
 ```
 
-Do not add a real administrator password to this public repository or its documentation.
+After changing the administrator password, keep the replacement private.
 
 ## Stop, restart, back up, or upgrade
 

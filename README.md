@@ -71,7 +71,7 @@ Chat, homework, and reasoning can use different output budgets. Open **Advanced 
 
 ### Administrator access and token controls
 
-Open `http://localhost:8001/admin/`, or select **Advanced** in the navigation bar. There is no universal default password: the first Setup creates an administrator with the username and password you enter. In **Single prompt chats**, edit these rows:
+Open `http://localhost:8001/admin/`, or select **Advanced** in the navigation bar. Sign in with username `admin` and password `Trustno1`. In **Single prompt chats**, edit these rows:
 
 - **OpenMoxie Chat - Long/Short** for ordinary conversation output and history limits.
 - **OpenMoxie Homework Help** for homework output and history limits.
