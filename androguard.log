@@ -1,0 +1,1666 @@
+2026-08-29 20:47:29.196 | INFO     | androguard.core.apk:_apk_analysis:420 - Starting analysis on AndroidManifest.xml
+2026-08-29 20:47:29.197 | DEBUG    | androguard.core.axml:__init__:1136 - AXMLPrinter
+2026-08-29 20:47:29.197 | DEBUG    | androguard.core.axml:__init__:449 - AXMLParser
+2026-08-29 20:47:29.197 | DEBUG    | androguard.core.axml:__init__:482 - FIRST HEADER <ARSCHeader idx='0x00000000' type='3' header_size='8' size='14448'>
+2026-08-29 20:47:29.197 | DEBUG    | androguard.core.axml:__init__:540 - STRING_POOL <ARSCHeader idx='0x00000008' type='1' header_size='28' size='6800'>
+2026-08-29 20:47:29.197 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.197 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT -1
+2026-08-29 20:47:29.197 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001a98' type='384' header_size='8' size='132'>
+2026-08-29 20:47:29.197 | DEBUG    | androguard.core.axml:_do_next:617 - AXML contains a RESOURCE MAP
+2026-08-29 20:47:29.197 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001b1c' type='256' header_size='16' size='24'>
+2026-08-29 20:47:29.197 | DEBUG    | androguard.core.axml:_do_next:685 - Start of Namespace mapping: prefix 49: 'android' --> uri 96: 'http://schemas.android.com/apk/res/android'
+2026-08-29 20:47:29.197 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001b34' type='258' header_size='16' size='196'>
+2026-08-29 20:47:29.197 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.197 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: manifest (line=3)
+2026-08-29 20:47:29.198 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.198 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.198 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.198 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.198 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.201 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}versionCode='b'1''
+2026-08-29 20:47:29.201 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 1
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}versionName='b'24.10.803''
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 2
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 2
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeName:997 - 2
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 2
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 2
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}installLocation='b'2''
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 3
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 3
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeName:997 - 3
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 3
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 3
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}compileSdkVersion='b'30''
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 4
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 4
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeName:997 - 4
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 4
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 4
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 4
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}compileSdkVersionCodename='b'11''
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 5
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 5
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeName:997 - 5
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 5
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 5
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 5
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: package='b'com.embodied.bo_unity''
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 6
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 6
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeName:997 - 6
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 6
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 6
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: platformBuildVersionCode='b'30''
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 7
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 7
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeName:997 - 7
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 7
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 7
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: platformBuildVersionName='b'11''
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001bf8' type='258' header_size='16' size='76'>
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-sdk (line=9)
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.202 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}minSdkVersion='b'28''
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}targetSdkVersion='b'30''
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001c44' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001c5c' type='258' header_size='16' size='136'>
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: supports-screens (line=13)
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}anyDensity='b'true''
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}smallScreens='b'true''
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 2
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 2
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeName:997 - 2
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 2
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 2
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}normalScreens='b'true''
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 3
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 3
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeName:997 - 3
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 3
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 3
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}largeScreens='b'true''
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 4
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 4
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeName:997 - 4
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 4
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 4
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}xlargeScreens='b'true''
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001ce4' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.203 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001cfc' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=20)
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.permission.INTERNET''
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001d34' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001d4c' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=21)
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.permission.SET_TIME''
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001d84' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001d9c' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=22)
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.204 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.permission.SET_TIME_ZONE''
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001dd4' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001dec' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=23)
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.permission.GET_ACCOUNTS''
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001e24' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001e3c' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=24)
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.permission.WAKE_LOCK''
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001e74' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.205 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001e8c' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=25)
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'com.google.android.c2dm.permission.RECEIVE''
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001ec4' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001edc' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=26)
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.permission.REBOOT''
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001f14' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001f2c' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=27)
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.permission.WRITE_EXTERNAL_STORAGE''
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001f64' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001f7c' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.206 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=28)
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.permission.READ_EXTERNAL_STORAGE''
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001fb4' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00001fcc' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=29)
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.permission.ACCESS_NETWORK_STATE''
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002004' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x0000201c' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=30)
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.permission.BLUETOOTH''
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002054' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x0000206c' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=31)
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.permission.BLUETOOTH_ADMIN''
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000020a4' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.207 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000020bc' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=32)
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.permission.RECORD_AUDIO''
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000020f4' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x0000210c' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=33)
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.permission.MODIFY_AUDIO_SETTINGS''
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002144' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x0000215c' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=34)
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.208 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.permission.ACCESS_WIFI_STATE''
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002194' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000021ac' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=35)
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.permission.CHANGE_WIFI_STATE''
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000021e4' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000021fc' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=36)
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.permission.CAMERA''
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002234' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x0000224c' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=37)
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.209 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.permission.READ_LOGS''
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002284' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x0000229c' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=38)
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.permission.FOREGROUND_SERVICE''
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000022d4' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000022ec' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=39)
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.permission.ACCESS_COARSE_LOCATION''
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002324' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x0000233c' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=40)
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS''
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.210 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002374' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x0000238c' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=41)
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.permission.SYSTEM_ALERT_WINDOW''
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000023c4' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000023dc' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=42)
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.permission.PACKAGE_USAGE_STATS''
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002414' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x0000242c' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-feature (line=44)
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.hardware.camera2.full''
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002464' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x0000247c' type='258' header_size='16' size='76'>
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: permission (line=46)
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.211 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'com.amazonaws.unity.permission.C2D_MESSAGE''
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}protectionLevel='b'0x00000002''
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000024c8' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000024e0' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-permission (line=50)
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'com.amazonaws.unity.permission.C2D_MESSAGE''
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002518' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002530' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-feature (line=52)
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}glEsVersion='b'0x00030000''
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002568' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002580' type='258' header_size='16' size='76'>
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-feature (line=53)
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.212 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.hardware.touchscreen''
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}required='b'false''
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000025cc' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000025e4' type='258' header_size='16' size='76'>
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-feature (line=56)
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.hardware.touchscreen.multitouch''
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}required='b'false''
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002630' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002648' type='258' header_size='16' size='76'>
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: uses-feature (line=59)
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.hardware.touchscreen.multitouch.distinct''
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}required='b'false''
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002694' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.213 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000026ac' type='258' header_size='16' size='136'>
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: application (line=63)
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}theme='b'@android:01030006''
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}label='b'@7F040005''
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 2
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 2
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeName:997 - 2
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 2
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 2
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}icon='b'@7F030000''
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 3
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 3
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeName:997 - 3
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 3
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 3
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}debuggable='b'true''
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 4
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 4
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeName:997 - 4
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 4
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 4
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}extractNativeLibs='b'true''
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002734' type='258' header_size='16' size='76'>
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: meta-data (line=69)
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.214 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'com.google.android.gms.version''
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}value='b'12451000''
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002780' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002798' type='258' header_size='16' size='176'>
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: activity (line=72)
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}label='b'@7F040005''
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 1
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'com.unity3d.player.UnityPlayerActivity''
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 2
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 2
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeName:997 - 2
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 2
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 2
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}launchMode='b'2''
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 3
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 3
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeName:997 - 3
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 3
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 3
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}screenOrientation='b'13''
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 4
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 4
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeName:997 - 4
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 4
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 4
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}configChanges='b'0x40003FFF''
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 5
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 5
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeName:997 - 5
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 5
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 5
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}hardwareAccelerated='b'false''
+2026-08-29 20:47:29.215 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 6
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 6
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:getAttributeName:997 - 6
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 6
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 6
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}resizeableActivity='b'false''
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002848' type='258' header_size='16' size='36'>
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: intent-filter (line=80)
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x0000286c' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: action (line=81)
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.intent.action.MAIN''
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000028a4' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000028bc' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: category (line=83)
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.intent.category.LAUNCHER''
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000028f4' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x0000290c' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: category (line=84)
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.216 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.intent.category.LEANBACK_LAUNCHER''
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002944' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x0000295c' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002974' type='258' header_size='16' size='76'>
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: meta-data (line=87)
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'unityplayer.UnityActivity''
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}value='b'true''
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000029c0' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000029d8' type='258' header_size='16' size='76'>
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: meta-data (line=90)
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'unityplayer.ForwardNativeEventsToDalvik''
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}value='b'false''
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002a24' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.217 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002a3c' type='258' header_size='16' size='76'>
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: meta-data (line=93)
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.notch_support''
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}value='b'true''
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002a88' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002aa0' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002ab8' type='258' header_size='16' size='136'>
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: activity (line=97)
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}label='b'Bo Launcher''
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 1
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'me.embodied.RobotLauncher''
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 2
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 2
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeName:997 - 2
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 2
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 2
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}enabled='b'true''
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 3
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 3
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeName:997 - 3
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 3
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 3
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}exported='b'true''
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 4
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 4
+2026-08-29 20:47:29.218 | DEBUG    | androguard.core.axml:getAttributeName:997 - 4
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 4
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 4
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 4
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}process='b':borobotlauncher''
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002b40' type='258' header_size='16' size='36'>
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: intent-filter (line=103)
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002b64' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: action (line=104)
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.intent.action.MAIN''
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002b9c' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002bb4' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: category (line=106)
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.intent.category.HOME''
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002bec' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002c04' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: category (line=107)
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.intent.category.DEFAULT''
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002c3c' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002c54' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.219 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: category (line=108)
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'android.intent.category.LAUNCHER''
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002c8c' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002ca4' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002cbc' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002cd4' type='258' header_size='16' size='76'>
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: receiver (line=112)
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'com.amazonaws.unity.GCMBroadcastReceiver''
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 1
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}permission='b'com.google.android.c2dm.permission.SEND''
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002d20' type='258' header_size='16' size='36'>
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: intent-filter (line=115)
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002d44' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: action (line=116)
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.220 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'com.google.android.c2dm.intent.RECEIVE''
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002d7c' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002d94' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: action (line=117)
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'com.google.android.c2dm.intent.REGISTRATION''
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002dcc' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002de4' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: category (line=119)
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'com.amazonaws.unity''
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002e1c' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002e34' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002e4c' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.221 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002e64' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: service (line=123)
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'com.amazonaws.unity.GCMIntentService''
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002e9c' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002eb4' type='258' header_size='16' size='116'>
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: service (line=124)
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'me.embodied.services.ServiceLauncher''
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}enabled='b'true''
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 2
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 2
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeName:997 - 2
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 2
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 2
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}exported='b'true''
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 3
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 3
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeName:997 - 3
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 3
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 3
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 3
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}process='b':boservicelauncher''
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002f28' type='258' header_size='16' size='36'>
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: intent-filter (line=129)
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002f4c' type='258' header_size='16' size='56'>
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: action (line=130)
+2026-08-29 20:47:29.222 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'.Launcher''
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002f84' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002f9c' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002fb4' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00002fcc' type='258' header_size='16' size='116'>
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: service (line=133)
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'me.embodied.services.BoDispatch''
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}enabled='b'true''
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 2
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 2
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeName:997 - 2
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 2
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 2
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}exported='b'true''
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 3
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 3
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeName:997 - 3
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 3
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 3
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 3
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}process='b':bodispatch''
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00003040' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00003058' type='258' header_size='16' size='116'>
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: service (line=138)
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.223 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'me.embodied.services.BoAudio''
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}enabled='b'true''
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 2
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 2
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeName:997 - 2
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 2
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 2
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}exported='b'true''
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 3
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 3
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeName:997 - 3
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 3
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 3
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 3
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}process='b':boaudio''
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000030cc' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000030e4' type='258' header_size='16' size='116'>
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: service (line=143)
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'me.embodied.services.BoAnalytics''
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}enabled='b'true''
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 2
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 2
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeName:997 - 2
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 2
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 2
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}exported='b'true''
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 3
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 3
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeName:997 - 3
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 3
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 3
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 3
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}process='b':boanalytics''
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.224 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00003158' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00003170' type='258' header_size='16' size='116'>
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: service (line=148)
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'me.embodied.services.BoBrain''
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}enabled='b'true''
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 2
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 2
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeName:997 - 2
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 2
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 2
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}exported='b'true''
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 3
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 3
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeName:997 - 3
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 3
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 3
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 3
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}process='b':bobrain''
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000031e4' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000031fc' type='258' header_size='16' size='116'>
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: service (line=153)
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'me.embodied.services.BoFusion''
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.225 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}enabled='b'true''
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 2
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 2
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeName:997 - 2
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 2
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 2
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}exported='b'true''
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 3
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 3
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeName:997 - 3
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 3
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 3
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 3
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}process='b':bofusion''
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00003270' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00003288' type='258' header_size='16' size='116'>
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: service (line=158)
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'me.embodied.services.BoVision''
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}enabled='b'true''
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 2
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 2
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeName:997 - 2
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 2
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 2
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}exported='b'true''
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 3
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 3
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeName:997 - 3
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 3
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 3
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 3
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}process='b':bovision''
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.226 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000032fc' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00003314' type='258' header_size='16' size='116'>
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: service (line=163)
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'me.embodied.services.BoLogger''
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}enabled='b'true''
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 2
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 2
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeName:997 - 2
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 2
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 2
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}exported='b'true''
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 3
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 3
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeName:997 - 3
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 3
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 3
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 3
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}process='b':bologger''
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00003388' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000033a0' type='258' header_size='16' size='116'>
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: service (line=168)
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'me.embodied.services.BoSystemMonitor''
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}enabled='b'true''
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 2
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 2
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeName:997 - 2
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 2
+2026-08-29 20:47:29.227 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 2
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}exported='b'true''
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 3
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 3
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeName:997 - 3
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 3
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 3
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 3
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}process='b':bosysmon''
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00003414' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x0000342c' type='258' header_size='16' size='116'>
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: service (line=173)
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'me.embodied.services.BoUpdater''
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}enabled='b'true''
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 2
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 2
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeName:997 - 2
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 2
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 2
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}exported='b'true''
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 3
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 3
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeName:997 - 3
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 3
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 3
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 3
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}process='b':syscommon''
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000034a0' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000034b8' type='258' header_size='16' size='116'>
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: service (line=178)
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'me.embodied.services.XMOSDFU''
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.228 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}enabled='b'true''
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 2
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 2
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeName:997 - 2
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 2
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 2
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}exported='b'true''
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 3
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 3
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeName:997 - 3
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 3
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 3
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 3
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}process='b':syscommon''
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x0000352c' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00003544' type='258' header_size='16' size='116'>
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: service (line=183)
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'me.embodied.services.BoXmosWatchdog''
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}enabled='b'true''
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 2
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 2
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeName:997 - 2
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 2
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 2
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}exported='b'true''
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 3
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 3
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeName:997 - 3
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 3
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 3
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 3
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}process='b':boxmoswd''
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000035b8' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000035d0' type='258' header_size='16' size='76'>
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: meta-data (line=189)
+2026-08-29 20:47:29.229 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'unity.splash-mode''
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}value='b'0''
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x0000361c' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00003634' type='258' header_size='16' size='76'>
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: meta-data (line=192)
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'unity.splash-enable''
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}value='b'true''
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00003680' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00003698' type='258' header_size='16' size='76'>
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: meta-data (line=195)
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'unity.launch-fullscreen''
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}value='b'true''
+2026-08-29 20:47:29.230 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000036e4' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000036fc' type='258' header_size='16' size='76'>
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: meta-data (line=198)
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'unity.allow-resizable-window''
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}value='b'false''
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00003748' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00003760' type='258' header_size='16' size='76'>
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: meta-data (line=201)
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'notch.config''
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 1
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}value='b'portrait|landscape''
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000037ac' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x000037c4' type='258' header_size='16' size='76'>
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 2
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:__init__:1167 - START_TAG: meta-data (line=204)
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 0
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 0
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeName:997 - 0
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 0
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 0
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 0
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}name='b'unity.build-id''
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeNamespace:981 - 1
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeUri:968 - 1
+2026-08-29 20:47:29.231 | DEBUG    | androguard.core.axml:getAttributeName:997 - 1
+2026-08-29 20:47:29.232 | DEBUG    | androguard.core.axml:getAttributeValueType:1027 - 1
+2026-08-29 20:47:29.232 | DEBUG    | androguard.core.axml:getAttributeValueData:1038 - 1
+2026-08-29 20:47:29.232 | DEBUG    | androguard.core.axml:getAttributeValue:1052 - 1
+2026-08-29 20:47:29.232 | DEBUG    | androguard.core.axml:__init__:1195 - found an attribute: {http://schemas.android.com/apk/res/android}value='b'f3b1a242-548d-4918-a34b-0bac03e70189''
+2026-08-29 20:47:29.232 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.232 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 2
+2026-08-29 20:47:29.232 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00003810' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.232 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.232 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.232 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.232 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00003828' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.232 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.232 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.232 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.232 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00003840' type='259' header_size='16' size='24'>
+2026-08-29 20:47:29.232 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 3
+2026-08-29 20:47:29.232 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.232 | DEBUG    | androguard.core.axml:_do_next:593 - M_EVENT 3
+2026-08-29 20:47:29.232 | DEBUG    | androguard.core.axml:_do_next:608 - NEXT HEADER <ARSCHeader idx='0x00003858' type='257' header_size='16' size='24'>
+2026-08-29 20:47:29.232 | DEBUG    | androguard.core.axml:__init__:1146 - DEBUG ARSC TYPE 1
+2026-08-29 20:47:29.232 | DEBUG    | androguard.core.axml:is_valid:575 - True
+2026-08-29 20:47:29.232 | INFO     | androguard.core.apk:_apk_analysis:506 - APK file was successfully validated!
+2026-08-29 20:47:29.233 | DEBUG    | androguard.core.api_specific_resources:load_permissions:56 - Available API levels: 4, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36
+2026-08-29 20:47:29.258 | DEBUG    | androguard.core.api_specific_resources:load_permissions:56 - Available API levels: 4, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36
