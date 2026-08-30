@@ -69,6 +69,28 @@ The model runner’s context length and OpenMoxie’s output-token limit are dif
 
 Chat, homework, and reasoning can use different output budgets. Open **Advanced → Single prompt chats** to adjust conversation and homework limits. Open a robot’s **Family & voice** settings to choose the reasoning model override, 128–8192 token budget, effort, and waiting interludes.
 
+### Administrator access and token controls
+
+Open `http://localhost:8001/admin/`, or select **Advanced** in the navigation bar. There is no universal default password: the first Setup creates an administrator with the username and password you enter. In **Single prompt chats**, edit these rows:
+
+- **OpenMoxie Chat - Long/Short** for ordinary conversation output and history limits.
+- **OpenMoxie Homework Help** for homework output and history limits.
+- **OpenMoxie Reasoning Mode** for the default reasoning output and history limits.
+
+Save the row; the running conversation service reloads the saved backend values. A robot’s **Family & voice** page can override the reasoning model and output-token limit for that robot. Avoid editing `local/work/db.sqlite3` directly.
+
+To reset an existing administrator named `admin`:
+
+```powershell
+docker compose exec server python3 site/manage.py changepassword admin
+```
+
+To create another administrator, choose your own username and email, then set its password:
+
+```powershell
+docker compose exec server python3 site/manage.py createsuperuser --username YOUR_NAME --email YOUR_EMAIL
+```
+
 ## Everyday use
 
 The Control Center can start Chat, Homework, Reasoning, Trivia, Jokes, and Sleep. Common voice requests include:

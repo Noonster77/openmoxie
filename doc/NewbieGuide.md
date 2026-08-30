@@ -65,9 +65,33 @@ A Wi-Fi check mark alone does not prove Moxie reached OpenMoxie. The Control Cen
 
 ## Change token limits
 
-Choose **Advanced**, sign in with the administrator created during Setup, and open **Single prompt chats**. Each row has its own maximum output tokens and history limit. Chat and homework changes apply to the live service after Save; reasoning also has a per-robot override under **Family & voice**.
+Choose **Advanced** in the top navigation, or open `http://localhost:8001/admin/`. Sign in with the administrator created during Setup. There is no shared default password; Setup uses the username and password you entered.
+
+Open **Single prompt chats**, select the relevant row, change **Max tokens** or **Max history**, and select **Save**:
+
+- **OpenMoxie Chat - Long** and **OpenMoxie Chat - Short** control normal conversations.
+- **OpenMoxie Homework Help** controls homework mode.
+- **OpenMoxie Reasoning Mode** controls the reasoning default.
+
+The saved values reload into the running backend. For one robot, open **Family & voice** to override its reasoning model, token budget, effort, and waiting interlude type. Use Django Admin rather than opening `local/work/db.sqlite3` in a database editor.
 
 Higher limits allow longer answers but use more time, memory, and cloud credit. Start with the included defaults. A setting does not guarantee every model can use that entire context or output size.
+
+### Create or reset an administrator
+
+To reset the original `admin` account, open PowerShell in the OpenMoxie folder and run:
+
+```powershell
+docker compose exec server python3 site/manage.py changepassword admin
+```
+
+To create another administrator, substitute your own username and email. Django will ask for the password without displaying it:
+
+```powershell
+docker compose exec server python3 site/manage.py createsuperuser --username YOUR_NAME --email YOUR_EMAIL
+```
+
+Do not add a real administrator password to this public repository or its documentation.
 
 ## Stop, restart, back up, or upgrade
 
