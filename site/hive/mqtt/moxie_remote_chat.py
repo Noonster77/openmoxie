@@ -18,7 +18,7 @@ import logging
 import threading
 from datetime import datetime
 from .global_responses import GlobalResponses
-from .conversations import ChatSession, HomeworkChatSession, JokeChatSession, SinglePromptDBChatSession, TriviaChatSession
+from .conversations import ChatSession, HomeworkChatSession, JokeChatSession, ReasoningChatSession, SinglePromptDBChatSession, TriviaChatSession
 from .volley import Volley
 from .conversation_log import record_conversation
 
@@ -124,6 +124,8 @@ class RemoteChat:
                     new_modules[f'{chat.module_id}/{content_id}'] = { 'xtor': JokeChatSession, 'params': {} }
                 elif chat.module_id == 'OPENMOXIE_HOMEWORK':
                     new_modules[f'{chat.module_id}/{content_id}'] = { 'xtor': HomeworkChatSession, 'params': { 'pk': chat.pk } }
+                elif chat.module_id == 'OPENMOXIE_REASONING':
+                    new_modules[f'{chat.module_id}/{content_id}'] = { 'xtor': ReasoningChatSession, 'params': { 'pk': chat.pk } }
                 else:
                     new_modules[f'{chat.module_id}/{content_id}'] = { 'xtor': SinglePromptDBChatSession, 'params': { 'pk': chat.pk } }
                 logger.debug(f'Registering {chat.module_id}/{content_id}')
@@ -141,6 +143,9 @@ class RemoteChat:
             mlist.append(modinfo)
         self._modules_info["modules"] = mlist
         self._modules = new_modules
+        # Existing sessions retain copied prompt/token values. Drop them so an
+        # admin save changes the next turn's real runtime behavior.
+        self._device_sessions = {}
         self._global_responses.update_from_database()
     
     # Handle GLOBAL patterns, available inside (almost) any module

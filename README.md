@@ -1,210 +1,104 @@
-# OpenMoxie
-⚠️ OFFICIAL SOURCE WARNING: This is the original and official repository for OpenMoxie. Please be aware that openmoxie.org and "OpenMoxie 2.0" are unaffiliated third-party projects. We cannot verify the safety or functionality of code downloaded from those sources.
+# OpenMoxie Family Edition
 
-<p>
-<img src="./site/static/hive/openmoxie_logo.svg" width="200" height="200">
-Welcome!  You may be here looking for a solution to run your Embodied Moxie Robot
-should their cloud infrastructure shut down.  If so, you are in the right place!  Some
-of you may already be concerned this is going to be complicated, and for those who
-are looking to just install and run something, we'll cover that first.
-</p>
+<p align="center"><img src="./site/static/hive/openmoxie_logo.svg" width="160" height="160" alt="OpenMoxie logo"></p>
 
-## Alpha family edition
+OpenMoxie is a local home server that reconnects an Embodied Moxie robot to useful conversation, activities, and family controls. It runs on a computer on the same trusted network as the robot and is managed through a browser—no replacement parent app is required.
 
-This branch is becoming a family-friendly starting point for running and extending Moxie after the original cloud service. The Control Center now includes a Parent Corner, live command acknowledgement, locally managed conversation history, no-repeat trivia decks, family joke collections, supported voice controls, local AI options, and clearer diagnostics.
+This repository is a community fork of [Justin Beghtol’s original OpenMoxie project](https://github.com/jbeghtol/openmoxie). The upstream project established the local MQTT, robot protocol, Django, schedule, and remote-conversation foundation. This fork keeps that work and its MIT license while focusing on an easier family experience and broader AI support. It is not an official Embodied product.
 
-- New installation: [Installation guide](doc/Installation.md)
-- Family controls and alpha checklist: [Alpha testing guide](doc/AlphaTesting.md)
-- Developers and contributors: [Contributor guide](doc/Contributing.md)
-- Robot lifecycle and protocol details: [Moxie overview](doc/MoxieOverview.md)
+## What changed in this fork
 
-This is alpha software. Keep backups of `local/work`, expect rough robot-firmware behavior, and report reproducible problems with secrets and family conversation text removed.
+- A cohesive Control Center, mobile navigation, Parent Corner, Live Room, command acknowledgements, recovery controls, and clearer setup diagnostics.
+- OpenAI, OpenRouter, LM Studio, local faster-whisper, and arbitrary OpenAI-compatible chat servers. LM Studio accepts the exact identifier of any model it can load.
+- Configurable conversation models, prompts, history, temperature, and output-token budgets in **Advanced → Single prompt chats**.
+- A button- and voice-activated reasoning mode for complex questions. Long inference runs in the background while Moxie rotates through enabled facts and jokes; ask “Is it ready?” to check the answer.
+- Fast homework help, conversation memory and local transcripts, family speaker profiles, privacy deletion, and conservative parent-review flags.
+- Editable, selectable joke and trivia collections. Knock-knock jokes now pause for “Who’s there?” and “Name who?” before delivering the punchline.
+- More than 100 family jokes and an expanded no-repeat trivia library with 100 additional reviewed questions in each of six categories.
 
-## What is OpenMoxie
+## Easiest install
 
-A local network hub that Moxie can connect with and a local network service that provides the critical messaging
-and services to make Moxie function to the extent it can using the internal software of the robot.  Much of the
-Moxie content is supported like Daily Missions, Reading, and Wild Workout; but some of the newer modules like Ocean
-Explorer, Animal Faces, and Story Maker are missing.  On the plus side, you will be able to control the schedule,
-exclude modules your child dislikes, and write your own simple conversations to have with Moxie.
+You need:
 
-There's no parent app, all configuration is done through the web interface to OpenMoxie.
+- A Windows, macOS, or Linux computer that can remain on while Moxie is used.
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) or Docker Engine with Compose.
+- Moxie and the computer on the same private home network.
+- Either a cloud AI key, or LM Studio plus a local model. Fixed trivia and jokes need no AI API.
 
-## What You Need
+### Windows
 
-1.  You need a computer of some kind (PC, Linux, Mac, Raspberry Pi5) on the same wireless network you intend to use
-your Moxie on.  This wireless network should be reasonable secure and should have a firewall, which is mostly what
-home networks look like these days.
-2. You need either an OpenAI account with credits, or local models for chat and speech as described below
-3. You need to install Docker (Docker Desktop https://www.docker.com/products/docker-desktop/ for example), don't buy any license as this is for personal use
+1. Download this repository with **Code → Download ZIP**, then extract it. Git is optional.
+2. Install and start Docker Desktop.
+3. Double-click `start-openmoxie.bat`.
+4. Wait for the browser to open `http://localhost:8001/hive`.
+5. Complete Setup, save, and use **Test saved AI**.
+6. Open **Migration QR** in the Control Center and show it to Moxie.
 
-# Quick Start
+For the recommended local model, double-click `setup-lm-studio-model.bat` first. It downloads and loads Qwen3.5 9B Q4_K_S through LM Studio, starts port 1234, and prints the exact Setup values.
 
-Unless you want to make changes, or your platform isn't supported, you should not need to clone this
-repository.  There are images available on Docker hub for common PC platforms.
+### macOS or Linux
 
-1. Download and install Docker to the target machine
-2. Create a directory somewhere, for instance an `OpenMoxie` folder in your home directory
-3. Download and save the latest [docker-compose.yml](./docker-compose.yml) and save it inside that directory
-4. Open a terminal window in that directory
-5. run `docker compose pull` (this downloads the latest images)
-6. On Windows, double-click `start-openmoxie.bat`; otherwise run `docker compose up -d --remove-orphans`
-7. Visit http://localhost:8001/hive
-
-Once running, the URL above should bring you to the setup page.  Details on setting up an OpenAI
-account can be found there.  Also, Docker Desktop can be used to stop and restart this without returning
-to the terminal, but a `local/work` directory will be created holding the database and log files for OpenMoxie.
-
-Do take a look at the [Moxie Overview](doc/MoxieOverview.md) to learn more about the schedule and settings.
-
-# Slow Start
-
-Still reading?  Ah, yes.  You are my kind of people. If you want to tinker, change things, debug, or
-just look under the hood a bit; you should clone the project.
-
-## Components
-
-Currently this project contains the following:
-
-* Django app for basic web services and database (using sqlite3 bindings)
-* pymqtt based service code to handle device
-* A simple MQTT based STT provider using OpenAI Whisper
-* A simple MQTT based remote chat service using single prompt inferences from OpenAI
-
-## Code 
-
-## Building Your Own Docker
-
-The Dockerfile and docker_compose.yml provide a direct means to install and run the complete
-system inside a container, including an MQTT broker with a self-signed certificate Moxie's should
-be able to join.
-
-1. Clone project
-2. Install docker
-3. run `docker compose up --build -d --remove-orphans`
-4. Visit http://localhost:8001/hive
-5. Depending on your PC firewall, expose port 8883
-
-## Running Directly
-
-You can run all the python project code locally, however you will still need an MQTT broker to coordinate
-the networking between Moxie and OpenMoxie services.  For linux-based development, I installed mosquitto and
-ran it natively.  It is probably simpler for most to use run the local docker version, which requires some
-light editing.
-
-1. Clone project
-2. Install dependencies
-```
-python3 -m pip install -r requirements.txt
-```
-3. Make initial migrations
-```
-python3 site/manage.py makemigrations
-```
-4. Run initial migration
-```
-python3 site/manage.py migrate
-```
-5. Create a superuser 
-```
-python site/manage.py createsuperuser
-```
-6. Run the initial data import
-```
-python3 site/manage.py init_data
-```
-7. Edit `site\openmoxie\settings.py` and edit this block to point to localhost for mqtt.  Alternately, you can edit your local /etc/hosts file to include `127.0.0.1       mqtt`
-```
-MQTT_ENDPOINT = {
-    'host': 'localhost',
-    'port': 8883,
-    'project': 'openmoxie',
-    'cert_required': False,
-}
-```
-9. Start the MQTT Broker
-```
-docker compose up -d mqtt
-```
-8. Run the service (Note: no-reload is currently required to prevent the mqtt supervisor from being created twice for some reason.)
-```
-python3 site/manage.py runserver --noreload
+```sh
+git clone https://github.com/Noonster77/openmoxie.git
+cd openmoxie
+docker compose up --build -d --remove-orphans
 ```
 
-Once it is running, you may visit http://localhost:8000/hive for the dashboard.
+Then visit `http://localhost:8001/hive`, complete Setup, and scan the Migration QR.
 
-## Zero-cost local AI with LM Studio and Whisper
+Your database, logs, local speech models, and transcripts live in `local/work`. Back up that directory before upgrades. Never publish it.
 
-OpenMoxie can use local models without paid API requests. Chat and speech recognition are separate settings, so both must be changed on the Setup page for a fully local configuration.
+For screenshots-in-words, terminology, and first-day checks, follow the [Newbie guide](doc/NewbieGuide.md). The fuller [Installation guide](doc/Installation.md) covers providers, upgrades, and troubleshooting.
 
-1. Install LM Studio and import/load a chat GGUF, such as Qwen3.5 9B Q4_K_S.
-2. In LM Studio's Developer tab, start the local API server on port `1234`. Allow local-network access if LM Studio offers that switch; the OpenMoxie Docker container must be able to reach the host.
-3. Copy the exact loaded model identifier shown by LM Studio.
-4. In OpenMoxie Setup, choose `LM Studio (local)`, enter that identifier, and use `http://host.docker.internal:1234/v1` as the base URL.
-5. Choose `Local faster-whisper` for speech. `small.en` is the recommended starting point.
-6. Save, then test a conversation from the dashboard's Interact link.
+## AI providers
 
-The local Whisper model downloads on the first spoken request and is cached in `local/work/models`. That first transcription can take noticeably longer. Subsequent transcriptions reuse the loaded model. LM Studio does not provide the audio transcription endpoint used by Moxie, and the Qwen chat GGUF is not a Whisper model, which is why OpenMoxie runs faster-whisper separately.
+| Provider | Setup model value | API base | Notes |
+|---|---|---|---|
+| LM Studio | Exact loaded model identifier | `http://host.docker.internal:1234/v1` | Local; supports any model LM Studio can serve |
+| OpenRouter | Exact model ID, for example `openai/gpt-5` | `https://openrouter.ai/api/v1` | Requires an OpenRouter key |
+| OpenAI | OpenAI model ID | Managed automatically | Requires an OpenAI API key |
+| Compatible | Server-specific model ID | Your server’s `/v1` URL | Works with compatible Ollama, vLLM, LocalAI, and similar servers |
 
-## Parent monitor, voice controls, and privacy
+### Model suggestions
 
-The Control Center provides a live conversation view, a redacted server-log view, recovery controls, mission descriptions, and daily transcript downloads. Conversation text is stored locally in SQLite and also appended to `local/work/transcripts/<device-id>/<date>.txt`.
+- **Current/recommended default: Qwen3.5 9B Q4_K_S.** Your existing local configuration uses `qwen_qwen3.5-9b.gguf`. It is the best starting balance here: roughly a 6.5 GB download, responsive enough for ordinary chat, and capable enough for the optional reasoning mode. Start with a 32,768-token loaded context, 120 chat output tokens, 224 homework output tokens, and 1,200 reasoning output tokens.
+- **Faster/lower-memory:** use a smaller Qwen3.5 quant/model when 9B is slow or does not fit. Keep reasoning effort off if that build does not expose reasoning controls.
+- **More deliberate but heavier:** `openai/gpt-oss-20b` can be a separate reasoning override if the computer can load it comfortably. Use LM Studio’s resource estimate before switching; a larger model is usually slower and is not necessary for trivia or jokes.
 
-Activity buttons interrupt the current module before launching, and refresh the connected robot's schedule cache so an earlier mission cannot launch by mistake. Trivia includes 30 editable questions across Animals, Math, Science, Silly, Words, and World categories. Use **Trivia setup** to choose categories, change game length, and add or edit questions.
+The model runner’s context length and OpenMoxie’s output-token limit are different settings. A large context lets the model read more history; the output limit caps how much it may generate for one spoken reply.
 
-Global voice shortcuts work while the robot is sending conversation requests:
+Chat, homework, and reasoning can use different output budgets. Open **Advanced → Single prompt chats** to adjust conversation and homework limits. Open a robot’s **Family & voice** settings to choose the reasoning model override, 128–8192 token budget, effort, and waiting interludes.
 
-- `Play trivia`
-- `Talk about something else`
-- `Stop this mission`
-- `Go to sleep`
-- `I'm Jack`
-- `This is Daddy`
+## Everyday use
 
-Parent-review safety flags use conservative local keyword matching. They can miss concerning language or flag harmless context, so they are an aid rather than a monitoring guarantee or a replacement for adult supervision.
+The Control Center can start Chat, Homework, Reasoning, Trivia, Jokes, and Sleep. Common voice requests include:
 
-This server does not currently receive Moxie's camera frames or a reliable face-identity signal. AI vision, face recognition, and person-following are therefore not enabled. Identifying Jack or Daddy is explicit and voice-based, not biometric. This avoids silently collecting facial templates for children and works with the existing server-only integration.
+- “Moxie, start reasoning mode.”
+- “Moxie, start homework mode.”
+- “Moxie, play trivia.”
+- “Moxie, tell me some jokes.”
+- “Talk about something else.”
+- “Go to sleep, please.”
 
-# MQTT Broker - Direct Install
+Reasoning answers may take two or three minutes on a large local model. Moxie returns immediately with a fact or joke so the robot does not time out; say “Is it ready?” until the completed answer is available.
 
-I have been running this all from a headless Ubuntu system using mosquitto MQTT as a broker and configured it for anonymous
-access, which is generally a bad idea when the services are running with payment attached.  But I wanted to share my setup
-in case anyone wanted to replicate it as a starting point on their own system.
+## Safety and privacy
 
+Keep ports `8001` and `8883` private. Do not port-forward them or expose this development server to the Internet. MQTT intentionally accepts Moxie on the local network, stored service keys are not encrypted, and keyword safety flags can miss context or produce false alarms. This project does not replace adult supervision.
+
+Before sharing a bug report, remove API keys, passwords, device IDs, names, logs, and transcripts. This is the only repository content intended to be public; runtime data in `local/work` must remain private.
+
+## Test and develop
+
+```sh
+python -m pip install -r requirements.txt
+python site/manage.py makemigrations --check --dry-run
+python site/manage.py check
+python site/manage.py test hive
 ```
-sudo apt-get install mosquitto
-```
 
-My site configuration for mosquitto in `/etc/mosquitto/conf.d/openmoxie.conf`
-```
-listener 8883
-cafile /etc/letsencrypt/live/domain.com/chain.pem
-keyfile /etc/letsencrypt/live/domain.com/privkey.pem
-certfile /etc/letsencrypt/live/domain.com/cert.pem
-allow_anonymous true
-```
+See [Contributing](doc/Contributing.md), [Alpha testing](doc/AlphaTesting.md), [Moxie overview](doc/MoxieOverview.md), and the [remote module API](doc/RemoteModuleAPI.md).
 
-I'm using Let's Encrypt with my apache instance, and have allowed ACL permission for mosquitto to read them for it's SSL connections and
-will be using a virtual host proxy to route openmoxie subdomain to the django port, so all external webtraffic is nicely encrypted.  The
-config for reference.
+## License
 
-```
-<IfModule mod_ssl.c>
-<VirtualHost *:443>
-        ServerAdmin webmaster@localhost
-        ServerName openmoxie.domain.com
-
-        ErrorLog ${APACHE_LOG_DIR}/openmoxie_error.log
-        CustomLog ${APACHE_LOG_DIR}/openmoxie_access.log combined
-        SSLEngine on
-        ProxyRequests Off
-        ProxyPreserveHost On
-        ProxyPass / http://localhost:8000/
-        ProxyPassReverse / http://localhost:8000/
-
-Include /etc/letsencrypt/options-ssl-apache.conf
-SSLCertificateFile /etc/letsencrypt/live/domain.com/fullchain.pem
-SSLCertificateKeyFile /etc/letsencrypt/live/domain.com/privkey.pem
-</VirtualHost>
-</IfModule>
-```
+OpenMoxie is open source under the [MIT License](LICENSE). You may use, copy, modify, and share it under those terms. Upstream copyright and license notices are preserved.

@@ -509,10 +509,11 @@ class MoxieServer:
         ).order_by('-created_at').first()
         if not command:
             return False
-        target = command.action if command.action in ('homework', 'trivia', 'jokes') else 'chat'
+        target = command.action if command.action in ('homework', 'reasoning', 'trivia', 'jokes') else 'chat'
         module_id = {
             'chat': 'OPENMOXIE_CHAT',
             'homework': 'OPENMOXIE_HOMEWORK',
+            'reasoning': 'OPENMOXIE_REASONING',
             'trivia': 'OPENMOXIE_TRIVIA',
             'jokes': 'OPENMOXIE_JOKES',
         }.get(target)
@@ -524,6 +525,7 @@ class MoxieServer:
         text = {
             'chat': "I'm listening. What would you like to talk about?",
             'homework': 'Homework mode is ready. Tell me the problem or subject.',
+            'reasoning': 'Reasoning mode is ready. Ask me a complex question.',
             'trivia': 'Trivia time! Get your thinking cap ready.',
             'jokes': "Joke time! I've got some good ones ready.",
         }[target]
@@ -649,7 +651,7 @@ class MoxieServer:
         set_openai_key(hive_config.openai_api_key if hive_config else None)
         if hive_config:
             configure_ai(hive_config.chat_provider, hive_config.chat_base_url, hive_config.chat_model,
-                         hive_config.stt_provider, hive_config.local_stt_model)
+                         hive_config.stt_provider, hive_config.local_stt_model, hive_config.chat_api_key)
         self._google_service_account = hive_config.google_api_key if hive_config else None
         self._remote_chat.update_from_database()
 

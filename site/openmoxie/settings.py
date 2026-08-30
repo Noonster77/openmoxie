@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
+import secrets
 from django.conf import settings
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -24,13 +25,22 @@ DATA_STORE_DIR.mkdir(parents=True, exist_ok=True)
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-v&n3hpdmu^t0r^62+hj64&c$z8q3o2g9qby^x02jl8y8g@jmb@'
+def _local_secret_key():
+    """Keep each family's signing key in private runtime storage, not Git."""
+    key_file = DATA_STORE_DIR / '.django-secret-key'
+    if key_file.exists():
+        return key_file.read_text(encoding='utf-8').strip()
+    key = secrets.token_urlsafe(64)
+    key_file.write_text(key, encoding='utf-8')
+    return key
+
+
+SECRET_KEY = os.environ.get('OPENMOXIE_SECRET_KEY') or _local_secret_key()
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('OPENMOXIE_DEBUG', '').lower() in ('1', 'true', 'yes')
 
-ALLOWED_HOSTS = [ '*' ]
+ALLOWED_HOSTS = [item.strip() for item in os.environ.get('OPENMOXIE_ALLOWED_HOSTS', '*').split(',') if item.strip()]
 
 
 # Application definition
@@ -48,8 +58,9 @@ INSTALLED_APPS = [
     'django_bootstrap5'
 ]
 
-STATIC_ROOT = BASE_DIR / 'static'
 STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'collected_static'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -153,11 +164,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
-
-STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

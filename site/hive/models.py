@@ -15,7 +15,7 @@ class SinglePromptChat(models.Model):
     opener = models.TextField()
     prompt = models.TextField()
     vendor = models.IntegerField(choices=[(tag.value, tag.name) for tag in AIVendor],default=AIVendor.OPEN_AI.value)
-    model = models.CharField(max_length=200, default="gpt-4o-mini")
+    model = models.CharField(max_length=200, blank=True, default='')
     max_tokens = models.IntegerField(default=70)
     temperature = models.FloatField(default=0.5)
     question_probability = models.FloatField(default=0.35)
@@ -43,6 +43,14 @@ def default_disabled_modules():
     """Accessories-era guidance should never enter a new family's rotation."""
     return ['TNT']
 
+
+def default_trivia_categories():
+    return ['Animals', 'Math', 'Science', 'Silly', 'Words', 'World']
+
+
+def default_joke_collections():
+    return ['Animal antics', 'Food fun', 'Knock-knock', 'Robot giggles', 'School smiles', 'Silly science']
+
 class MoxieDevice(models.Model):
     device_id = models.CharField(max_length=200)
     email = models.EmailField(null=True, blank=True)
@@ -62,9 +70,14 @@ class MoxieDevice(models.Model):
     ))
     conversation_memory_enabled = models.BooleanField(default=True)
     speaker_names = models.JSONField(default=list, blank=True)
-    trivia_categories = models.JSONField(default=list, blank=True)
+    trivia_categories = models.JSONField(default=default_trivia_categories, blank=True)
     trivia_question_count = models.PositiveSmallIntegerField(default=10)
     trivia_seen_question_ids = models.JSONField(default=list, blank=True)
+    joke_collections = models.JSONField(default=default_joke_collections, blank=True)
+    reasoning_model = models.CharField(max_length=255, blank=True, default='')
+    reasoning_max_tokens = models.PositiveIntegerField(default=1200)
+    reasoning_effort = models.CharField(max_length=20, default='high')
+    reasoning_interludes = models.CharField(max_length=20, default='mixed')
     disabled_module_ids = models.JSONField(default=default_disabled_modules, blank=True)
 
     def is_paired(self):
@@ -93,6 +106,7 @@ class HiveConfiguration(models.Model):
     chat_provider = models.CharField(max_length=20, default='openai')
     chat_base_url = models.CharField(max_length=500, blank=True, default='http://host.docker.internal:1234/v1')
     chat_model = models.CharField(max_length=255, default='gpt-4o-mini')
+    chat_api_key = models.TextField(blank=True, default='')
     stt_provider = models.CharField(max_length=20, default='openai')
     local_stt_model = models.CharField(max_length=100, default='small.en')
 

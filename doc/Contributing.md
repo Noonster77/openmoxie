@@ -1,5 +1,7 @@
 # Contributing to OpenMoxie
 
+This family edition is a fork of [jbeghtol/openmoxie](https://github.com/jbeghtol/openmoxie). Preserve upstream attribution and the MIT license when redistributing changes.
+
 ## Project map
 
 - `site/hive/models.py`: persistent application data.
@@ -19,6 +21,8 @@
 5. Run `python site/manage.py makemigrations --check --dry-run`, `python site/manage.py check`, and `python site/manage.py test hive`.
 6. Render and exercise changed pages at desktop and mobile widths.
 7. Update the README or the relevant document when behavior or setup changes.
+
+Do not commit `local/work`, logs, API keys, passwords, device identifiers, or conversation transcripts. Treat this source repository as public.
 
 ## Design principles
 

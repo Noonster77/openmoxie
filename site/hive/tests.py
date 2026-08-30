@@ -1,7 +1,7 @@
 import json
 import threading
 import tempfile
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -13,7 +13,7 @@ from .models import ConversationEvent, GlobalResponse, HiveConfiguration, Joke, 
 from .mqtt.moxie_server import MoxieServer
 from .mqtt.moxie_remote_chat import RemoteChat
 from .mqtt.robot_data import RobotData
-from .mqtt.conversations import ChatSession, HomeworkChatSession, JokeChatSession, SingleContextChatSession, TriviaChatSession
+from .mqtt.conversations import ChatSession, HomeworkChatSession, JokeChatSession, ReasoningChatSession, SingleContextChatSession, SinglePromptDBChatSession, TriviaChatSession
 from .mqtt.volley import Volley
 from .mqtt.conversation_log import record_conversation, safety_redirect
 from .mqtt.global_responses import GlobalResponses
@@ -347,6 +347,26 @@ class WakeControlTests(TestCase):
 
 
 class LocalAIAndMissionTests(TestCase):
+    @patch('hive.mqtt.ai_factory.OpenAI')
+    def test_openrouter_uses_configured_key_base_url_and_custom_model(self, openai):
+        ai_factory.configure_ai(
+            chat_provider='openrouter',
+            chat_base_url='https://openrouter.ai/api/v1',
+            chat_model='custom/provider-model',
+            chat_api_key='router-key',
+        )
+        completion = openai.return_value.chat.completions.create.return_value
+        completion.choices = [SimpleNamespace(message=SimpleNamespace(content='Hello'))]
+
+        result = ai_factory.chat_completion([{'role': 'user', 'content': 'Hi'}], max_tokens=321)
+
+        openai.assert_called_once_with(
+            api_key='router-key', base_url='https://openrouter.ai/api/v1', timeout=180,
+        )
+        self.assertEqual(openai.return_value.chat.completions.create.call_args.kwargs['model'], 'custom/provider-model')
+        self.assertEqual(openai.return_value.chat.completions.create.call_args.kwargs['max_tokens'], 321)
+        self.assertEqual(result, 'Hello')
+
     @patch.object(ai_factory._CHAT_HTTP_SESSION, 'post')
     def test_lmstudio_respects_configured_output_limit(self, post):
         ai_factory.configure_ai(
@@ -367,7 +387,7 @@ class LocalAIAndMissionTests(TestCase):
         self.assertEqual(result, 'A short answer.')
         self.assertEqual(post.call_args.kwargs['json']['max_output_tokens'], 35)
         self.assertEqual(post.call_args.kwargs['json']['reasoning'], 'off')
-        self.assertEqual(post.call_args.kwargs['timeout'], (5, 90))
+        self.assertEqual(post.call_args.kwargs['timeout'], (5, 180))
 
     @patch.object(ai_factory._CHAT_HTTP_SESSION, 'post')
     def test_lmstudio_accepts_homework_reasoning_mode(self, post):
@@ -413,6 +433,19 @@ class LocalAIAndMissionTests(TestCase):
         session.add_history('user', 'three')
 
         self.assertEqual([item['content'] for item in session._history], ['two', 'three'])
+
+    def test_conversation_model_override_reaches_backend(self):
+        chat = SinglePromptChat.objects.create(
+            name='Custom chat', module_id='CUSTOM_CHAT', content_id='default',
+            opener='Hello', prompt='Be helpful.', model='family/custom-model',
+        )
+        session = SinglePromptDBChatSession(chat.pk)
+        volley = Volley.request_from_speech('Hello', device_id='test')
+
+        with patch('hive.mqtt.conversations.chat_completion', return_value='Hi there') as completion:
+            session.handle_volley(volley)
+
+        self.assertEqual(completion.call_args.kwargs['model_override'], 'family/custom-model')
 
     def test_zero_question_probability_enforces_answer_only_context(self):
         session = SingleContextChatSession(
@@ -494,6 +527,15 @@ class LocalAIAndMissionTests(TestCase):
         self.assertEqual(session._max_history, 16)
         self.assertEqual(completion.call_args.kwargs['max_tokens'], 224)
         self.assertEqual(completion.call_args.kwargs['reasoning'], 'off')
+
+    def test_homework_honors_admin_token_budget(self):
+        homework = SinglePromptChat.objects.get(module_id='OPENMOXIE_HOMEWORK', content_id='default')
+        homework.max_tokens = 333
+        homework.save(update_fields=['max_tokens'])
+
+        session = HomeworkChatSession(homework.pk)
+
+        self.assertEqual(session._max_tokens, 333)
 
     def test_homework_removes_questions_and_extra_offers(self):
         homework = SinglePromptChat.objects.get(
@@ -608,6 +650,15 @@ class ParentSafetyAndVoiceTests(TestCase):
         self.assertEqual(payload['response_action']['action'], 'launch')
         self.assertEqual(payload['response_action']['module_id'], 'OPENMOXIE_HOMEWORK')
 
+    def test_start_reasoning_voice_command_returns_launch_action(self):
+        responses = GlobalResponses()
+        responses.update_from_database()
+        volley = Volley.request_from_speech('Moxie, start reasoning mode', device_id=self.device.device_id)
+
+        payload = responses.check_global(volley)()
+
+        self.assertEqual(payload['response_action']['module_id'], 'OPENMOXIE_REASONING')
+
     def test_sleep_voice_command_accepts_trailing_please(self):
         responses = GlobalResponses()
         responses.update_from_database()
@@ -714,6 +765,8 @@ class ParentSafetyAndVoiceTests(TestCase):
         self.assertEqual(set(first_ids), set(self.device.trivia_seen_question_ids))
 
     def test_joke_session_does_not_repeat_a_joke(self):
+        self.device.joke_collections = ['Test']
+        self.device.save(update_fields=['joke_collections'])
         Joke.objects.all().delete()
         for number in range(3):
             Joke.objects.create(collection='Test', setup=f'Setup {number}?', punchline=f'Punchline {number}.')
@@ -723,6 +776,68 @@ class ParentSafetyAndVoiceTests(TestCase):
 
         self.assertEqual(len(session.local_data['jokes']), 3)
         self.assertEqual(len({item['setup'] for item in session.local_data['jokes']}), 3)
+
+    def test_knock_knock_joke_waits_for_both_responses(self):
+        self.device.joke_collections = ['Knock-knock']
+        self.device.save(update_fields=['joke_collections'])
+        Joke.objects.all().delete()
+        Joke.objects.create(
+            collection='Knock-knock',
+            setup='Knock, knock! Who is there? Lettuce. Lettuce who?',
+            punchline='Lettuce in, it is chilly out here!',
+        )
+        session = JokeChatSession()
+
+        opener = Volley.request_from_speech('', device_id=self.device.device_id)
+        session.handle_volley(opener)
+        who = Volley.request_from_speech("Who's there?", device_id=self.device.device_id)
+        session.handle_volley(who)
+        name = Volley.request_from_speech('Lettuce who?', device_id=self.device.device_id)
+        session.handle_volley(name)
+
+        self.assertEqual(opener.response['output']['text'], 'Joke time! Knock, knock!')
+        self.assertEqual(who.response['output']['text'], 'Lettuce.')
+        self.assertIn('Lettuce in', name.response['output']['text'])
+        self.assertNotIn('Lettuce in', who.response['output']['text'])
+
+    def test_reasoning_runs_in_background_and_uses_enabled_database_content(self):
+        self.device.reasoning_model = 'custom/reasoner'
+        self.device.reasoning_max_tokens = 2048
+        self.device.reasoning_effort = 'high'
+        self.device.reasoning_interludes = 'facts'
+        self.device.trivia_categories = ['Reasoning facts']
+        self.device.save()
+        TriviaQuestion.objects.create(
+            category='Reasoning facts', question='Test?', accepted_answers=['yes'],
+            fun_fact='This fact came from the enabled database category.',
+        )
+        source = SinglePromptChat.objects.get(module_id='OPENMOXIE_REASONING', content_id='default')
+        session = ReasoningChatSession(source.pk)
+        pending = Future()
+
+        with patch.object(session._executor, 'submit', return_value=pending) as submit:
+            question = Volley.request_from_speech('Solve a complex problem', device_id=self.device.device_id)
+            session.handle_volley(question)
+
+        self.assertIn('enabled database category', question.response['output']['text'])
+        self.assertEqual(submit.call_args.args[2:], ('custom/reasoner', 2048, 'high'))
+        waiting = Volley.request_from_speech('Is it ready?', device_id=self.device.device_id)
+        session.handle_volley(waiting)
+        self.assertIn('still working', waiting.response['output']['text'])
+        pending.set_result('The careful answer is forty-two.')
+        ready = Volley.request_from_speech('Is it ready?', device_id=self.device.device_id)
+        session.handle_volley(ready)
+        self.assertIn('careful answer is forty-two', ready.response['output']['text'])
+
+    def test_disabling_all_trivia_categories_disables_the_game(self):
+        self.device.trivia_categories = []
+        self.device.save(update_fields=['trivia_categories'])
+        session = TriviaChatSession()
+        opener = Volley.request_from_speech('', device_id=self.device.device_id)
+
+        session.handle_volley(opener)
+
+        self.assertIn('any enabled trivia categories', opener.response['output']['text'])
 
     @patch('hive.views.get_instance')
     def test_transcript_entry_can_be_deleted_and_text_file_is_rewritten(self, get_instance):
@@ -782,6 +897,9 @@ class ParentSafetyAndVoiceTests(TestCase):
             TriviaQuestion.objects.count(),
             TriviaQuestion.objects.values('question').distinct().count(),
         )
+        for category in ('Animals', 'Math', 'Science', 'Silly', 'Words', 'World'):
+            with self.subTest(category=category):
+                self.assertGreaterEqual(TriviaQuestion.objects.filter(category=category).count(), 100)
 
     def test_trivia_save_shows_animated_confirmation(self):
         response = self.client.post(

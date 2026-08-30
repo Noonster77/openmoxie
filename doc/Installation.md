@@ -4,7 +4,7 @@
 
 You need a computer that can stay on while Moxie is in use, Docker Desktop or Docker Engine with Compose, and a trusted home network. Do not expose ports 8001 or 8883 to the public Internet. Moxie and the OpenMoxie computer should be on the same LAN.
 
-For conversation AI, choose either OpenAI API access with available credits or LM Studio running a compatible chat model. Speech recognition can use OpenAI Whisper or local faster-whisper. Moxie's spoken output still uses the speech engine installed in the robot.
+For conversation AI, choose OpenAI, OpenRouter, LM Studio, or another OpenAI-compatible service. Speech recognition can use OpenAI Whisper or local faster-whisper. Moxie's spoken output still uses the speech engine installed in the robot. First-time users should begin with the [Newbie guide](NewbieGuide.md).
 
 ## Install with Docker
 
@@ -28,6 +28,14 @@ After the first setup, the two OpenMoxie containers restart automatically whenev
 4. Use `http://host.docker.internal:1234/v1` from Docker Desktop.
 5. Choose local faster-whisper. `small.en` is the recommended balance.
 6. Save and use Test selected AI.
+
+Any model LM Studio can expose through its chat API is supported. Copy its exact identifier; OpenMoxie does not maintain a model allowlist. If the model does not implement reasoning controls, choose **Off / compatibility** for reasoning effort.
+
+## OpenRouter and other compatible providers
+
+For OpenRouter, select it directly, enter an OpenRouter key and exact model ID, and use `https://openrouter.ai/api/v1`. For Ollama, vLLM, LocalAI, or another compatible server, select **Other OpenAI-compatible server** and enter that server's reachable `/v1` base URL. A service running on the Docker host usually needs `host.docker.internal` instead of `localhost`.
+
+Conversation and homework token budgets are editable in **Advanced → Single prompt chats**. Reasoning model, effort, output tokens, and waiting content are editable per robot under **Family & voice**.
 
 ## Upgrade
 

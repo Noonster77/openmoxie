@@ -1,5 +1,5 @@
 from time import sleep
-from django.core.management.commands.runserver import Command as RunserverCommand
+from django.contrib.staticfiles.management.commands.runserver import Command as RunserverCommand
 from django.core.management import call_command
 from django.conf import settings
 import threading

@@ -7,8 +7,8 @@
 <section class="panel mb-3">
   <form method="post" action="{% url 'hive:trivia_configure' object.pk %}">{% csrf_token %}<input type="hidden" name="action" value="save_options">
     <div class="compact-options">
-      <div><h2 class="panel-title mb-1">Game mix</h2><p class="form-text m-0">No category selection means all enabled questions.</p></div>
-      <div class="category-picker">{% for category in categories %}<label><input type="checkbox" name="categories" value="{{category}}" {% if not object.trivia_categories or category in object.trivia_categories %}checked{% endif %}><span>{{category}}</span></label>{% endfor %}</div>
+      <div><h2 class="panel-title mb-1">Game mix</h2><p class="form-text m-0">Turn each category on or off. Selecting none disables trivia until a category is enabled.</p></div>
+      <div class="category-picker">{% for category in categories %}<label><input type="checkbox" name="categories" value="{{category}}" {% if category in object.trivia_categories %}checked{% endif %}><span>{{category}}</span></label>{% endfor %}</div>
       <label class="count-control">Questions <input class="form-control" type="number" name="question_count" min="3" max="20" value="{{object.trivia_question_count}}"></label>
       <button class="btn btn-primary">Save mix</button>
     </div>

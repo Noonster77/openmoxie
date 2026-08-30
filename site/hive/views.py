@@ -69,12 +69,17 @@ def hive_configure(request):
     cfg.chat_provider = request.POST.get('chat_provider', 'openai')
     cfg.chat_base_url = request.POST.get('chat_base_url', '').strip()
     cfg.chat_model = request.POST.get('chat_model', 'gpt-4o-mini').strip() or 'gpt-4o-mini'
+    compatible_key = request.POST.get('chat_api_key', '').strip()
+    if compatible_key:
+        cfg.chat_api_key = compatible_key
     cfg.stt_provider = request.POST.get('stt_provider', 'openai')
     cfg.local_stt_model = request.POST.get('local_stt_model', 'small.en').strip() or 'small.en'
-    if cfg.chat_provider not in ('openai', 'lmstudio') or cfg.stt_provider not in ('openai', 'local'):
+    if cfg.chat_provider not in ('openai', 'lmstudio', 'compatible', 'openrouter') or cfg.stt_provider not in ('openai', 'local'):
         return HttpResponseBadRequest('Unsupported AI provider selection.')
-    if cfg.chat_provider == 'lmstudio' and not cfg.chat_base_url.startswith(('http://', 'https://')):
-        return HttpResponseBadRequest('LM Studio base URL must begin with http:// or https://')
+    if cfg.chat_provider == 'openrouter' and not cfg.chat_base_url:
+        cfg.chat_base_url = 'https://openrouter.ai/api/v1'
+    if cfg.chat_provider in ('lmstudio', 'compatible', 'openrouter') and not cfg.chat_base_url.startswith(('http://', 'https://')):
+        return HttpResponseBadRequest('The chat base URL must begin with http:// or https://')
     cfg.allow_unverified_bots = request.POST.get('allowall') == "on"
     # Bootstrap any default data if not present
     if not cfg.common_config:
@@ -351,6 +356,17 @@ def moxie_edit(request, pk):
         device.conversation_profile = request.POST.get('conversation_profile', '').strip()
         device.conversation_memory_enabled = request.POST.get('conversation_memory_enabled') == 'on'
         device.speaker_names = [name.strip() for name in request.POST.get('speaker_names', '').splitlines() if name.strip()]
+        device.reasoning_model = request.POST.get('reasoning_model', '').strip()
+        device.reasoning_effort = request.POST.get('reasoning_effort', 'high')
+        if device.reasoning_effort not in ('off', 'low', 'medium', 'high', 'on'):
+            return HttpResponseBadRequest('Choose a valid reasoning effort.')
+        device.reasoning_interludes = request.POST.get('reasoning_interludes', 'mixed')
+        if device.reasoning_interludes not in ('facts', 'jokes', 'mixed'):
+            return HttpResponseBadRequest('Choose facts, jokes, or a mix for reasoning interludes.')
+        try:
+            device.reasoning_max_tokens = max(128, min(8192, int(request.POST.get('reasoning_max_tokens', 1200))))
+        except ValueError:
+            return HttpResponseBadRequest('Reasoning token limit must be a number.')
         device.schedule = MoxieSchedule.objects.get(pk=request.POST["schedule"])
         # changes to json field inside config
         if device.robot_config == None:
@@ -411,6 +427,7 @@ class MoxieLauncherView(generic.DetailView):
         ) for item in RECOMMENDABLE_MODULES]
         remote_descriptions = {
             ('OPENMOXIE_CHAT', 'default'): 'Open-ended conversation using your selected local or cloud AI, family profile, and recent memory.',
+            ('OPENMOXIE_REASONING', 'default'): 'Careful background reasoning for complex questions, with fun facts while the selected model works.',
             ('OPENMOXIE_HOMEWORK', 'default'): 'Fast, answer-first help with math, science, history, language arts, and other schoolwork—without follow-up questions.',
             ('OPENMOXIE_TRIVIA', 'default'): 'A configurable, API-free trivia game with categories, score, fun facts, and playful interludes.',
             ('OPENMOXIE_JOKES', 'default'): 'A family-managed, API-free joke mix with collections and no repeats during a run.',
@@ -419,6 +436,7 @@ class MoxieLauncherView(generic.DetailView):
         }
         remote_names = {
             ('OPENMOXIE_CHAT', 'default'): 'Talk with Moxie',
+            ('OPENMOXIE_REASONING', 'default'): 'Reasoning mode',
             ('OPENMOXIE_HOMEWORK', 'default'): 'Homework help',
             ('OPENMOXIE_TRIVIA', 'default'): 'Trivia game',
             ('OPENMOXIE_JOKES', 'default'): 'Family joke time',
@@ -461,8 +479,7 @@ class JokeSettingsView(generic.DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        selected = (self.object.robot_config or {}).get('joke_collections', [])
-        context['selected_collections'] = selected
+        context['selected_collections'] = self.object.joke_collections
         context['collections'] = list(Joke.objects.order_by('collection').values_list('collection', flat=True).distinct())
         context['jokes'] = Joke.objects.all()
         return context
@@ -473,10 +490,8 @@ def joke_configure(request, pk):
     device = get_object_or_404(MoxieDevice, pk=pk)
     action = request.POST.get('action', 'save_options')
     if action == 'save_options':
-        if device.robot_config is None:
-            device.robot_config = {}
-        device.robot_config['joke_collections'] = request.POST.getlist('collections')
-        device.save(update_fields=['robot_config'])
+        device.joke_collections = request.POST.getlist('collections')
+        device.save(update_fields=['joke_collections'])
         get_instance().handle_config_updated(device)
         message = 'Joke mix saved and ready for the next joke session.'
     elif action == 'save_joke':
@@ -623,7 +638,7 @@ def _interrupt_and_launch(service, device, module_id, content_id='default', text
 def robot_control(request, pk):
     device = get_object_or_404(MoxieDevice, pk=pk)
     action = request.POST.get('action', '')
-    if action not in ('wake', 'chat', 'homework', 'trivia', 'jokes', 'interrupt', 'sleep'):
+    if action not in ('wake', 'chat', 'homework', 'reasoning', 'trivia', 'jokes', 'interrupt', 'sleep'):
         return HttpResponseBadRequest('Unknown robot action.')
     service = get_instance()
     online = service.robot_data().device_online(device.device_id)
@@ -643,11 +658,12 @@ def robot_control(request, pk):
         status='failed',
         detail=f'Superseded by a newer {action} request.',
     )
-    if action in ('wake', 'chat', 'homework', 'trivia', 'jokes', 'interrupt'):
-        target = action if action in ('homework', 'trivia', 'jokes') else 'chat'
+    if action in ('wake', 'chat', 'homework', 'reasoning', 'trivia', 'jokes', 'interrupt'):
+        target = action if action in ('homework', 'reasoning', 'trivia', 'jokes') else 'chat'
         module_id = {
             'chat': 'OPENMOXIE_CHAT',
             'homework': 'OPENMOXIE_HOMEWORK',
+            'reasoning': 'OPENMOXIE_REASONING',
             'trivia': 'OPENMOXIE_TRIVIA',
             'jokes': 'OPENMOXIE_JOKES',
         }[target]
@@ -659,6 +675,7 @@ def robot_control(request, pk):
             {
                 'chat': "I'm listening. What would you like to talk about?",
                 'homework': 'Homework mode is ready. Tell me the problem or subject.',
+                'reasoning': 'Reasoning mode is ready. Ask me a complex question.',
                 'trivia': 'Trivia time! Get your thinking cap ready.',
                 'jokes': "Joke time! I've got some good ones ready.",
             }[target],
@@ -682,11 +699,12 @@ def robot_control(request, pk):
             sent = False
         message = 'Sleep requested. Waiting for Moxie to report sleep; voice fallback: “Go to sleep, please.”' if sent else 'Moxie is offline; no sleep command was sent.'
     command_status = 'sent' if online else (
-        'queued' if action in ('wake', 'chat', 'homework', 'trivia', 'jokes', 'interrupt') else 'failed'
+        'queued' if action in ('wake', 'chat', 'homework', 'reasoning', 'trivia', 'jokes', 'interrupt') else 'failed'
     )
     RobotCommandEvent.objects.create(
         device=device, action=action, label={
             'wake': 'Wake & Chat', 'chat': 'Start chat', 'homework': 'Start homework',
+            'reasoning': 'Start reasoning',
             'trivia': 'Start trivia', 'jokes': 'Start joke time', 'interrupt': 'Return to chat',
             'sleep': 'Go to sleep',
         }.get(action, action.title()), status=command_status,

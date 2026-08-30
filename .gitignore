@@ -3,6 +3,7 @@
 
 # IDE config and metadata
 *.iml
+*.log
 
 # Only preserve folder structure
 local/work/**/*

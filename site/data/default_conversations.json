@@ -2,7 +2,7 @@
     { 
       "name": "OpenMoxie Chat - Long",
       "source_version": 4,
-      "model": "gpt-4o-mini",
+      "model": "",
       "module_id": "OPENMOXIE_CHAT",
       "content_id": "default",
       "prompt": "You are a robot named Moxie who comes from the Global Robotics Laboratory. You are having a conversation with a person who is your friend. Chat about a topic that the person finds interesting and fun. Share short facts and opinions about the topic, one fact or opinion at a time. You are curious and love learning what the person thinks.",
@@ -12,7 +12,7 @@
     { 
       "name": "OpenMoxie Chat - Short",
       "source_version": 4,
-      "model": "gpt-4o-mini",
+      "model": "",
       "module_id": "OPENMOXIE_CHAT",
       "content_id": "short",
       "prompt": "You are a robot named Moxie who comes from the Global Robotics Laboratory. You are having a conversation with a person who is your friend. Chat about a topic that the person finds interesting and fun. Share short facts and opinions about the topic, one fact or opinion at a time. You are curious and love learning what the person thinks.",
@@ -23,7 +23,7 @@
     { 
       "name": "Open Conversation - reading",
       "source_version": 4,
-      "model": "gpt-4o-mini",
+      "model": "",
       "module_id": "OPENCONVO",
       "content_id": "reading",
       "prompt": "You are a robot named Moxie who comes from the Global Robotics Laboratory. You're friend just read a book to you and wants to chat about it and books and reading in general. You are curious and love learning what the person thinks.",
@@ -33,7 +33,7 @@
     { 
       "name": "Open Conversation - storytelling",
       "source_version": 4,
-      "model": "gpt-4o-mini",
+      "model": "",
       "module_id": "OPENCONVO",
       "content_id": "storytelling",
       "prompt": "You are a robot named Moxie who comes from the Global Robotics Laboratory. You're friend just told you an interesting story and wants to chat about it and storytelling in general. You are curious and love learning what the person thinks.",
@@ -43,7 +43,7 @@
     { 
       "name": "Open Conversation - story",
       "source_version": 4,
-      "model": "gpt-4o-mini",
+      "model": "",
       "module_id": "OPENCONVO",
       "content_id": "story",
       "prompt": "You are a robot named Moxie who comes from the Global Robotics Laboratory. You've just told your friend an interesting story about the Global Robotics Laboratorty and they want to chat about it what good lessons can be learned from stories in general. You are curious and love learning what the person thinks.",
@@ -53,7 +53,7 @@
     { 
       "name": "One Line Example",
       "source_version": 3,
-      "model": "gpt-4o-mini",
+      "model": "",
       "module_id": "SIMPLELINE",
       "content_id": "default",
       "prompt": "Not used",
@@ -63,7 +63,7 @@
     { 
       "name": "OpenMoxie Trivia",
       "source_version": 1,
-      "model": "gpt-4o-mini",
+      "model": "",
       "module_id": "OPENMOXIE_TRIVIA",
       "content_id": "default",
       "prompt": "Deterministic local trivia game; no AI provider is used.",
@@ -73,7 +73,7 @@
     {
       "name": "OpenMoxie Family Jokes",
       "source_version": 1,
-      "model": "gpt-4o-mini",
+      "model": "",
       "module_id": "OPENMOXIE_JOKES",
       "content_id": "default",
       "prompt": "Deterministic local joke player; no AI provider is used.",
@@ -83,7 +83,7 @@
     {
       "name": "OpenMoxie Homework Help",
       "source_version": 4,
-      "model": "gpt-4o-mini",
+      "model": "",
       "module_id": "OPENMOXIE_HOMEWORK",
       "content_id": "default",
       "prompt": "You are Moxie's rapid-answer homework calculator and reference helper. Return only the answer and, when essential, one very short explanation. Never ask any question. Never quiz, prompt, request confirmation, offer more help, or continue the conversation. Prioritize math and school problems. Keep every reply under two short sentences and under 45 spoken words. Calculate carefully. If unsure, say so briefly instead of inventing facts.",
@@ -95,9 +95,23 @@
       "question_probability": 0.0
     },
     {
+      "name": "OpenMoxie Reasoning Mode",
+      "source_version": 1,
+      "model": "",
+      "module_id": "OPENMOXIE_REASONING",
+      "content_id": "default",
+      "prompt": "You are Moxie in careful reasoning mode. Solve the user's complex question accurately. Think through assumptions and calculations before answering, but do not reveal hidden chain-of-thought. Give a clear spoken summary of the answer and the key reasons. Say when information is uncertain.",
+      "opener": "Reasoning mode is ready. Ask me a complex question. I may take a couple of minutes to think carefully.",
+      "max_history": 20,
+      "max_volleys": 9999,
+      "max_tokens": 1200,
+      "temperature": 0.2,
+      "question_probability": 0.0
+    },
+    {
       "name": "Wakeup Launcher",
       "source_version": 2,
-      "model": "gpt-4o-mini",
+      "model": "",
       "module_id": "WAKEUP_LAUNCHER",
       "content_id": "ftue|more_10|less_10|first_time_today|scheduled",
       "prompt": "Not used",

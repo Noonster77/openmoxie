@@ -7,6 +7,7 @@ import copy
 import random
 import re
 import traceback
+from concurrent.futures import ThreadPoolExecutor
 from django.template import Template, Context
 from .ai_factory import chat_completion
 from ..models import Joke, MoxieDevice, SinglePromptChat, TriviaQuestion
@@ -244,6 +245,7 @@ class SingleContextChatSession(ChatSession):
             resp = chat_completion(
                 context + history,
                 fallback_model=self._model,
+                model_override=self._model or None,
                 max_tokens=self._max_tokens,
                 temperature=self._temperature,
                 reasoning=self._reasoning,
@@ -284,6 +286,7 @@ class SingleContextChatSession(ChatSession):
             resp = chat_completion(
                 msgs,
                 fallback_model=model,
+                model_override=model or None,
                 max_tokens=max_tokens,
                 temperature=self._temperature,
                 reasoning=self._reasoning,
@@ -352,9 +355,7 @@ class HomeworkChatSession(SinglePromptDBChatSession):
         # spoken message before that deadline, so homework responses must use
         # the fast path.  Keep enough context and output room for multi-step
         # homework while avoiding a runaway local-model generation.
-        self._max_history = max(self._max_history, 16)
-        self._max_tokens = 224
-        self._temperature = 0.1
+        self._max_history = max(self._max_history, 1)
         self._question_probability = 0.0
         self._reasoning = 'off'
 
@@ -505,6 +506,117 @@ class HomeworkChatSession(SinglePromptDBChatSession):
         return self.concise_answer(response), overflow
 
 
+class ReasoningChatSession(SinglePromptDBChatSession):
+    """Long-running, model-agnostic reasoning that never blocks Moxie's response window."""
+    FACTS = [
+        'Octopuses have three hearts, and two of them pump blood to the gills.',
+        'A day on Venus is longer than a year on Venus.',
+        'Honeybees use a waggle dance to share the direction and distance of food.',
+        'The Moon moves about four centimeters farther from Earth each year.',
+        'A group of flamingos is called a flamboyance.',
+        'Bananas are berries in botanical terms, while strawberries are not.',
+        'Light from the Sun takes about eight minutes and twenty seconds to reach Earth.',
+        'Sea otters may keep a favorite rock in a pouch for opening shellfish.',
+        'The dot over a lowercase i or j is called a tittle.',
+        'A blue whale’s heart can weigh more than one hundred kilograms.',
+        'Some bamboo species can grow more than half a meter in one day.',
+        'The fingerprints of a koala can look surprisingly similar to human fingerprints.',
+    ]
+    _executor = ThreadPoolExecutor(max_workers=3, thread_name_prefix='moxie-reasoning')
+
+    def __init__(self, pk):
+        super().__init__(pk)
+        self._pending = None
+        self._pending_question = ''
+        self._last_fact = ''
+        self._used_interludes = set()
+
+    def _fact(self):
+        choices = [fact for fact in self.FACTS if fact != self._last_fact]
+        self._last_fact = random.choice(choices)
+        return self._last_fact
+
+    def _interlude(self, device_id):
+        device = MoxieDevice.objects.filter(device_id=device_id).first()
+        mode = device.reasoning_interludes if device else 'facts'
+        choices = []
+        if mode in ('facts', 'mixed'):
+            categories = device.trivia_categories if device else []
+            facts = TriviaQuestion.objects.filter(
+                enabled=True, category__in=categories
+            ).exclude(fun_fact='').values_list('pk', 'fun_fact')
+            choices.extend((f'fact:{pk}', f'Fun fact: {fact}') for pk, fact in facts)
+        if mode in ('jokes', 'mixed'):
+            collections = device.joke_collections if device else []
+            jokes = Joke.objects.filter(
+                enabled=True, collection__in=collections
+            ).exclude(collection='Knock-knock').values_list('pk', 'setup', 'punchline')
+            choices.extend((f'joke:{pk}', f'Joke break: {setup} {punchline}') for pk, setup, punchline in jokes)
+        unseen = [item for item in choices if item[0] not in self._used_interludes]
+        if not unseen and choices:
+            self._used_interludes.clear()
+            unseen = choices
+        if unseen:
+            key, text = random.choice(unseen)
+            self._used_interludes.add(key)
+            return text
+        return f'Fun fact: {self._fact()}'
+
+    def _answer(self, messages, model, max_tokens, effort):
+        return chat_completion(
+            messages, fallback_model=self._model, model_override=model or self._model or None,
+            max_tokens=max_tokens, temperature=self._temperature, reasoning=effort,
+        )
+
+    def handle_volley(self, volley: Volley):
+        volley.assign_local_data(self._local_data)
+        command = volley.request.get('command')
+        if command == 'prompt':
+            self._pending = None
+            self._pending_question = ''
+            text, _ = self.get_opener()
+            volley.set_output(text, None)
+            return
+
+        if self._pending is not None:
+            if not self._pending.done():
+                volley.set_output(
+                    f"I am still working through it. {self._interlude(volley.device_id)} Ask if it is ready in a little while.",
+                    None,
+                )
+                return
+            try:
+                answer = self._pending.result()
+            except Exception:
+                logger.exception('Reasoning-mode inference failed')
+                answer = 'I could not finish that answer. Please check the AI connection in the OpenMoxie setup screen.'
+            self.add_history('user', self._pending_question)
+            self.add_history('assistant', answer)
+            self.remember_exchange(volley, self._pending_question, answer)
+            self._pending = None
+            self._pending_question = ''
+            volley.set_output(f'{answer} Reasoning mode is ready for another complex question.', None)
+            return
+
+        speech = volley.request.get('speech', '').strip()
+        redirect = safety_redirect(speech)
+        if redirect:
+            volley.set_output(redirect, None)
+            return
+        device = MoxieDevice.objects.filter(device_id=volley.device_id).first()
+        max_tokens = max(128, min(8192, device.reasoning_max_tokens if device else self._max_tokens))
+        effort = device.reasoning_effort if device and device.reasoning_effort in ('off', 'low', 'medium', 'high', 'on') else 'high'
+        model = (device.reasoning_model or '').strip() if device else ''
+        messages = self.make_volley_context(volley) + copy.deepcopy(self._history)
+        messages.append({'role': 'user', 'content': speech})
+        self._pending_question = speech
+        self._pending = self._executor.submit(self._answer, messages, model, max_tokens, effort)
+        volley.set_output(
+            f"I am thinking carefully in the background. {self._interlude(volley.device_id)} Ask, is it ready, after a little while.",
+            None,
+        )
+
+
 class TriviaChatSession(ChatSession):
     """Configurable, API-free trivia with category filters and spoken-friendly pacing."""
     FALLBACK_QUESTIONS = [
@@ -532,13 +644,15 @@ class TriviaChatSession(ChatSession):
         self._local_data['last_patter'] = ''
         questions = []
         count = 10
+        disabled = False
+        device = None
         try:
             device = MoxieDevice.objects.filter(device_id=device_id).first() if device_id else None
             categories = device.trivia_categories if device else []
+            disabled = bool(device and not categories)
             count = max(3, min(20, device.trivia_question_count if device else 10))
             query = TriviaQuestion.objects.filter(enabled=True)
-            if categories:
-                query = query.filter(category__in=categories)
+            query = query.filter(category__in=categories)
             rows = list(query)
             unseen_rows = rows
             rolled_deck = False
@@ -562,7 +676,7 @@ class TriviaChatSession(ChatSession):
             ]
         except Exception:
             logger.exception('Could not load configured trivia; using built-in fallback')
-        if not questions:
+        if not questions and not disabled:
             questions = copy.deepcopy(self.FALLBACK_QUESTIONS)
         random.shuffle(questions)
         self._local_data['trivia_questions'] = questions[:min(count, len(questions))]
@@ -586,6 +700,10 @@ class TriviaChatSession(ChatSession):
         if volley.request.get('command') == 'prompt':
             self.reset_game(volley.device_id)
             total = len(self._local_data['trivia_questions'])
+            if not total:
+                volley.set_output("I don't have any enabled trivia categories. Ask a grown-up to turn one on in Parent Corner.", None)
+                volley.add_launch_or_exit()
+                return
             text = f"Let's play {total} questions of mixed-up trivia. I'll keep score. {self._ask(0)}"
         elif volley.request.get('command') == 'reprompt':
             text = "No problem. Here it is again. " + self._ask(self._local_data['trivia_index'])
@@ -625,17 +743,32 @@ class JokeChatSession(ChatSession):
         super().__init__(max_history=0)
         self._local_data['jokes'] = []
         self._local_data['joke_index'] = 0
+        self._local_data['joke_phase'] = 'start'
 
     def _load(self, device_id):
         device = MoxieDevice.objects.filter(device_id=device_id).first()
-        selected = (device.robot_config or {}).get('joke_collections', []) if device else []
+        selected = device.joke_collections if device else []
         query = Joke.objects.filter(enabled=True)
-        if selected:
-            query = query.filter(collection__in=selected)
+        query = query.filter(collection__in=selected)
         jokes = list(query.values('setup', 'punchline', 'collection'))
         random.shuffle(jokes)
         self._local_data['jokes'] = jokes
         self._local_data['joke_index'] = 0
+        self._local_data['joke_phase'] = 'start'
+
+    @staticmethod
+    def _knock_word(setup):
+        match = re.match(r'^Knock, knock! Who is there\? (.+?)\. \1 who\?$', setup, re.I)
+        return match.group(1) if match else None
+
+    def _start_joke(self, joke):
+        word = self._knock_word(joke['setup']) if joke['collection'] == 'Knock-knock' else None
+        if word:
+            self._local_data['joke_phase'] = 'knock_wait_who'
+            self._local_data['knock_word'] = word
+            return 'Knock, knock!'
+        self._local_data['joke_phase'] = 'setup_wait'
+        return joke['setup']
 
     def handle_volley(self, volley: Volley):
         volley.assign_local_data(self._local_data)
@@ -647,16 +780,26 @@ class JokeChatSession(ChatSession):
             volley.add_launch_or_exit()
             return
         index = self._local_data['joke_index']
+        phase = self._local_data.get('joke_phase', 'start')
         if volley.request.get('command') == 'prompt':
-            text = f"Joke time! {jokes[index]['setup']}"
+            text = f"Joke time! {self._start_joke(jokes[index])}"
+        elif phase == 'knock_wait_who':
+            self._local_data['joke_phase'] = 'knock_wait_name'
+            text = f"{self._local_data['knock_word']}."
+        elif phase in ('knock_wait_name', 'setup_wait'):
+            self._local_data['joke_phase'] = 'another_wait'
+            text = f"{jokes[index]['punchline']} Want another joke?"
         else:
-            current = jokes[index]
+            speech = volley.request.get('speech', '').lower()
+            if re.search(r'\b(?:no|stop|done|not now|no thanks)\b', speech):
+                volley.set_output('Thanks for laughing with me!', None)
+                volley.add_launch_or_exit()
+                return
             index += 1
             if index >= len(jokes):
-                text = f"{current['punchline']} That's every joke in this mix. Thanks for laughing with me!"
-                volley.set_output(text, None)
+                volley.set_output("That's every joke in this mix. Thanks for laughing with me!", None)
                 volley.add_launch_or_exit()
                 return
             self._local_data['joke_index'] = index
-            text = f"{current['punchline']} Here's another. {jokes[index]['setup']}"
+            text = self._start_joke(jokes[index])
         volley.set_output(text, None)

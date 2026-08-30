@@ -28,4 +28,4 @@ EXPOSE 8000
 
 # Run Django development server
 # - Does data migrations and ensure stock data available, then runs the service
-CMD ["bash", "-c", "python3 site/manage.py makemigrations && python3 site/manage.py migrate && python3 site/manage.py init_data && python3 site/manage.py runserver --noreload 0.0.0.0:8000"]
+CMD ["bash", "-c", "python3 site/manage.py migrate && python3 site/manage.py init_data && python3 site/manage.py collectstatic --noinput && python3 site/manage.py runserver --noreload --insecure 0.0.0.0:8000"]
