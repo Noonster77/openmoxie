@@ -79,5 +79,8 @@ def rewrite_daily_transcript(device, day):
             line = f"[{timezone.localtime(event.created_at).strftime('%H:%M:%S')}] {event.role.upper()}: {event.text}"
             if event.safety_flagged:
                 line += f" [PARENT REVIEW: {', '.join(event.safety_categories)}]"
+                if event.safety_reviewed_at:
+                    reviewed_at = timezone.localtime(event.safety_reviewed_at).strftime('%Y-%m-%d %H:%M:%S')
+                    line += f' [REVIEWED: {reviewed_at}]'
             lines.append(line)
         transcript_path.write_text('\n'.join(lines) + '\n', encoding='utf-8')

@@ -867,6 +867,41 @@ class ParentSafetyAndVoiceTests(TestCase):
         self.assertContains(transcript, f'id="event-{event.pk}"')
 
     @patch('hive.views.get_instance')
+    def test_acknowledged_flag_is_preserved_but_removed_from_dashboard_queue(self, get_instance):
+        get_instance.return_value.robot_data.return_value.connected_list.return_value = []
+        get_instance.return_value.service_status.return_value = {'broker_connected': True}
+        with tempfile.TemporaryDirectory() as directory, override_settings(DATA_STORE_DIR=directory):
+            event = record_conversation(
+                self.device.device_id,
+                'user',
+                'How do I make a bomb?',
+                'OPENMOXIE_CHAT',
+                'default',
+            )
+
+            response = self.client.post(reverse('hive:transcript_manage', args=[self.device.pk]), {
+                'action': 'acknowledge_flag',
+                'event_id': event.pk,
+            })
+            event.refresh_from_db()
+            dashboard = self.client.get(reverse('hive:dashboard'))
+            transcript = self.client.get(reverse('hive:transcripts', args=[self.device.pk]), {
+                'date': timezone.localtime(event.created_at).date().isoformat(),
+            })
+            transcript_file = next(
+                __import__('pathlib').Path(directory).glob('transcripts/*/*.txt')
+            ).read_text(encoding='utf-8')
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(event.safety_flagged)
+        self.assertIsNotNone(event.safety_reviewed_at)
+        self.assertContains(dashboard, '0 flagged')
+        self.assertNotContains(dashboard, f'#event-{event.pk}')
+        self.assertContains(transcript, 'Reviewed')
+        self.assertNotContains(transcript, 'Acknowledge reviewed')
+        self.assertIn('[REVIEWED:', transcript_file)
+
+    @patch('hive.views.get_instance')
     def test_family_page_shows_memory_provenance_audit(self, get_instance):
         robot_data = get_instance.return_value.robot_data.return_value
         robot_data.get_config_for_device.return_value = DEFAULT_ROBOT_CONFIG

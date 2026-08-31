@@ -130,6 +130,7 @@ class DashboardView(generic.TemplateView):
         context['recent_conversation'] = ConversationEvent.objects.select_related('device').order_by('-created_at')[:20]
         flagged_today = ConversationEvent.objects.select_related('device').filter(
             safety_flagged=True,
+            safety_reviewed_at__isnull=True,
             created_at__date=timezone.localdate(),
         ).order_by('-created_at')
         context['safety_alerts_today'] = flagged_today.count()
@@ -184,6 +185,7 @@ def live_activity(request, pk):
             'id': event.pk, 'time': event.created_at.isoformat(), 'role': event.role,
             'text': event.text, 'module_id': event.module_id, 'content_id': event.content_id,
             'safety_flagged': event.safety_flagged, 'safety_categories': event.safety_categories,
+            'safety_reviewed_at': event.safety_reviewed_at.isoformat() if event.safety_reviewed_at else None,
         } for event in reversed(events)],
         'debug': _safe_debug_tail(),
         'commands': [{
@@ -229,6 +231,9 @@ def transcript_download(request, pk, day):
         line = f'[{local_time}] {event.role.upper()}: {event.text}'
         if event.safety_flagged:
             line += f" [PARENT REVIEW: {', '.join(event.safety_categories)}]"
+            if event.safety_reviewed_at:
+                reviewed_at = timezone.localtime(event.safety_reviewed_at).strftime('%Y-%m-%d %H:%M:%S')
+                line += f' [REVIEWED: {reviewed_at}]'
         lines.append(line)
     response = HttpResponse('\n'.join(lines) + '\n', content_type='text/plain; charset=utf-8')
     response['Content-Disposition'] = f'attachment; filename="moxie-{selected_date}.txt"'
@@ -245,6 +250,18 @@ def transcript_manage(request, pk):
         affected_days.add(timezone.localtime(event.created_at).date())
         event.delete()
         message = 'Conversation entry deleted.'
+    elif action == 'acknowledge_flag':
+        event = get_object_or_404(
+            ConversationEvent,
+            pk=request.POST.get('event_id'),
+            device=device,
+            safety_flagged=True,
+        )
+        affected_days.add(timezone.localtime(event.created_at).date())
+        if event.safety_reviewed_at is None:
+            event.safety_reviewed_at = timezone.now()
+            event.save(update_fields=['safety_reviewed_at'])
+        message = 'Parent-review flag acknowledged.'
     elif action == 'delete_day':
         try:
             selected_day = date.fromisoformat(request.POST.get('date', ''))
@@ -261,6 +278,12 @@ def transcript_manage(request, pk):
         return HttpResponseBadRequest('Unknown transcript action.')
     for affected_day in affected_days:
         rewrite_daily_transcript(device, affected_day)
+    if action == 'acknowledge_flag':
+        event_day = timezone.localtime(event.created_at).date().isoformat()
+        return redirect(
+            f"{reverse('hive:transcripts', args=[device.pk])}"
+            f"?date={event_day}&saved=Parent-review+flag+acknowledged.#event-{event.pk}"
+        )
     return redirect(f"{reverse('hive:transcripts', args=[device.pk])}?saved={message}")
 
 

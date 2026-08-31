@@ -183,6 +183,7 @@ class ConversationEvent(models.Model):
     content_id = models.CharField(max_length=100, blank=True, default='')
     safety_flagged = models.BooleanField(default=False, db_index=True)
     safety_categories = models.JSONField(default=list, blank=True)
+    safety_reviewed_at = models.DateTimeField(null=True, blank=True, db_index=True)
 
     class Meta:
         ordering = ['created_at']
