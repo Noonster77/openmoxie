@@ -23,6 +23,7 @@ from .mqtt.moxie_server import get_instance
 from .mqtt.robot_data import DEFAULT_ROBOT_CONFIG, DEFAULT_ROBOT_SETTINGS
 from .mqtt.volley import Volley
 from .mqtt.conversation_log import rewrite_daily_transcript
+from .mqtt.conversation_memory import clear_memory, memory_audit
 from .mqtt.ai_factory import create_chat_client, get_chat_model
 import json
 import uuid
@@ -127,7 +128,16 @@ class DashboardView(generic.TemplateView):
         context['openai_configured'] = bool(hive_config and (hive_config.openai_api_key or '').strip())
         context['ai_config'] = hive_config
         context['recent_conversation'] = ConversationEvent.objects.select_related('device').order_by('-created_at')[:20]
-        context['safety_alerts_today'] = ConversationEvent.objects.filter(safety_flagged=True, created_at__date=date.today()).count()
+        flagged_today = ConversationEvent.objects.select_related('device').filter(
+            safety_flagged=True,
+            created_at__date=timezone.localdate(),
+        ).order_by('-created_at')
+        context['safety_alerts_today'] = flagged_today.count()
+        context['safety_review_event'] = flagged_today.first()
+        if context['safety_review_event']:
+            context['safety_review_date'] = timezone.localtime(
+                context['safety_review_event'].created_at
+            ).date().isoformat()
         return context
 
 
@@ -342,8 +352,13 @@ class MoxieView(generic.DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['active_config'] = get_instance().robot_data().get_config_for_device(self.object)
+        robot_data = get_instance().robot_data()
+        context['active_config'] = robot_data.get_config_for_device(self.object)
         context['schedules'] = MoxieSchedule.objects.all()
+        persist_data = robot_data.get_persist_for_device(self.object)
+        context['active_speaker'] = persist_data.get('active_speaker')
+        context['memory_profiles'], context['legacy_memory_items'] = memory_audit(persist_data)
+        context['legacy_memory_count'] = len(context['legacy_memory_items'])
         return context
 
 # MOXIE-POST - Save changes to a Moxie record
@@ -406,12 +421,17 @@ def moxie_edit(request, pk):
 def clear_conversation_memory(request, pk):
     device = get_object_or_404(MoxieDevice, pk=pk)
     pdata = get_instance().robot_data().get_persist_for_device(device)
-    pdata.pop('conversation_memory', None)
+    speaker = request.POST.get('speaker', '').strip()
+    clear_memory(pdata, speaker or None)
     persistent = getattr(device, 'persistentdata', None)
     if persistent:
         persistent.data = pdata
         persistent.save(update_fields=['data'])
-    return redirect('hive:dashboard_alert', alert_message=f'Cleared conversation memory for {device}.')
+    if speaker:
+        messages.success(request, f'Cleared conversation memory for {speaker}.')
+    else:
+        messages.success(request, f'Cleared all conversation memory for {device}.')
+    return redirect('hive:moxie', pk=device.pk)
 
 
 class MoxieLauncherView(generic.DetailView):

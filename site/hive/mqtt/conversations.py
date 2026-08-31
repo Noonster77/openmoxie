@@ -13,6 +13,7 @@ from .ai_factory import chat_completion
 from ..models import Joke, MoxieDevice, SinglePromptChat, TriviaQuestion
 from .volley import Volley
 from .conversation_log import safety_redirect
+from .conversation_memory import remember_exchange as save_memory_exchange, speaker_items
 
 logger = logging.getLogger(__name__)
 
@@ -125,6 +126,8 @@ class SingleContextChatSession(ChatSession):
         self._notify_handler = None
         self._complete_handler = None
         self._prompt_template = Template(prompt)
+        self._speaker_scope_initialized = False
+        self._speaker_scope = None
 
     def set_filters(self, pre_filter=None, post_filter=None, complete_handler=None, notify_handler=None):
         self._pre_filter = pre_filter
@@ -163,10 +166,14 @@ class SingleContextChatSession(ChatSession):
         # same persistent memory every turn duplicates tokens and slows local
         # inference; use a compact memory only at the start of a session.
         if volley.conversation_memory_enabled and self.is_empty():
-            remembered = volley.persist_data.get('conversation_memory', {}).get('recent', [])
+            remembered = speaker_items(volley.persist_data, active_speaker)
             if remembered:
                 memory_lines = [f"{item.get('role', 'user')}: {item.get('content', '')}" for item in remembered[-8:]]
-                ctx += "\n\nRECENT CONVERSATION MEMORY (use naturally; do not claim perfect memory):\n" + "\n".join(memory_lines)
+                ctx += (
+                    f"\n\nRECENT CONVERSATION MEMORY FOR {active_speaker} ONLY "
+                    "(use naturally; do not claim perfect memory or apply it to another person):\n"
+                    + "\n".join(memory_lines)
+                )
         return [ { "role": "system", 
                     "content": ctx
                     } ]
@@ -174,12 +181,21 @@ class SingleContextChatSession(ChatSession):
     def remember_exchange(self, volley, speech, response):
         if not volley.conversation_memory_enabled:
             return
-        recent = volley.persist_data.setdefault('conversation_memory', {}).setdefault('recent', [])
-        recent.extend([
-            {'role': 'user', 'content': speech},
-            {'role': 'assistant', 'content': response},
-        ])
-        del recent[:-20]
+        save_memory_exchange(
+            volley.persist_data,
+            volley.persist_data.get('active_speaker'),
+            speech,
+            response,
+            volley.request,
+        )
+
+    def enforce_speaker_scope(self, volley):
+        """Drop live session history whenever the identified speaker changes."""
+        speaker = (volley.persist_data.get('active_speaker') or '').strip() or None
+        if self._speaker_scope_initialized and speaker != self._speaker_scope:
+            self.reset()
+        self._speaker_scope = speaker
+        self._speaker_scope_initialized = True
     
     # Handle Moxie saying something, accumulate to history
     def ingest_notify(self, volley:Volley):
@@ -191,6 +207,7 @@ class SingleContextChatSession(ChatSession):
     def handle_volley(self, volley:Volley):
         volley.assign_local_data(self._local_data)
         try:
+            self.enforce_speaker_scope(volley)
             cmd = volley.request.get('command')
             # when prompting into a convo, make sure its clean
             if cmd == "prompt" and not self.is_empty():

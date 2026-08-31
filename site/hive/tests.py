@@ -8,11 +8,12 @@ from unittest.mock import MagicMock, patch
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from django.conf import settings
+from django.utils import timezone
 
 from .models import ConversationEvent, GlobalResponse, HiveConfiguration, Joke, MoxieDevice, MoxieSchedule, RobotCommandEvent, SinglePromptChat, TriviaQuestion
 from .mqtt.moxie_server import MoxieServer
 from .mqtt.moxie_remote_chat import RemoteChat
-from .mqtt.robot_data import RobotData
+from .mqtt.robot_data import DEFAULT_ROBOT_CONFIG, RobotData
 from .mqtt.conversations import ChatSession, HomeworkChatSession, JokeChatSession, ReasoningChatSession, SingleContextChatSession, SinglePromptDBChatSession, TriviaChatSession
 from .mqtt.volley import Volley
 from .mqtt.conversation_log import record_conversation, safety_redirect
@@ -504,6 +505,82 @@ class LocalAIAndMissionTests(TestCase):
 
         self.assertNotIn('Old remembered response', context)
 
+    def test_persistent_memory_is_scoped_to_the_active_speaker(self):
+        session = SingleContextChatSession(prompt='Be concise.')
+        volley = Volley.request_from_speech('Continue', device_id='test')
+        volley._robot_data = {
+            'persist': {
+                'active_speaker': 'Avery',
+                'conversation_memory': {
+                    'version': 2,
+                    'profiles': {
+                        'Avery': {'items': [{'role': 'user', 'content': 'Avery likes astronomy.'}]},
+                        'Mom': {'items': [{'role': 'user', 'content': 'Mom likes gardening.'}]},
+                    },
+                },
+            },
+            'conversation_memory_enabled': True,
+        }
+
+        context = session.make_volley_context(volley)[0]['content']
+
+        self.assertIn('Avery likes astronomy', context)
+        self.assertNotIn('Mom likes gardening', context)
+
+    def test_memory_records_speaker_and_source_provenance(self):
+        session = SingleContextChatSession(prompt='Be concise.')
+        volley = Volley.request_from_speech(
+            'My favorite color is green.',
+            device_id='test',
+            module_id='OPENMOXIE_CHAT',
+            content_id='default',
+        )
+        volley._robot_data = {
+            'persist': {'active_speaker': 'Avery'},
+            'conversation_memory_enabled': True,
+        }
+
+        session.remember_exchange(volley, volley.request['speech'], 'I will keep that in mind.')
+        items = volley.persist_data['conversation_memory']['profiles']['Avery']['items']
+
+        self.assertEqual(len(items), 2)
+        self.assertEqual(items[0]['provenance']['speaker'], 'Avery')
+        self.assertEqual(items[0]['provenance']['source'], 'conversation')
+        self.assertEqual(items[0]['provenance']['source_event_id'], volley.request['event_id'])
+        self.assertEqual(items[0]['provenance']['module_id'], 'OPENMOXIE_CHAT')
+        self.assertTrue(items[0]['provenance']['captured_at'])
+
+    def test_switching_speakers_clears_live_session_history(self):
+        session = SingleContextChatSession(prompt='Be concise.')
+        avery = Volley.request_from_speech('Hello', device_id='test')
+        avery._robot_data = {'persist': {'active_speaker': 'Avery'}}
+        mom = Volley.request_from_speech('Hello', device_id='test')
+        mom._robot_data = {'persist': {'active_speaker': 'Mom'}}
+        session.enforce_speaker_scope(avery)
+        session.add_history('user', 'Private note from Avery')
+
+        session.enforce_speaker_scope(mom)
+
+        self.assertTrue(session.is_empty())
+
+    def test_legacy_unscoped_memory_is_quarantined_and_not_prompted(self):
+        session = SingleContextChatSession(prompt='Be concise.')
+        volley = Volley.request_from_speech('Continue', device_id='test')
+        volley._robot_data = {
+            'persist': {
+                'active_speaker': 'Avery',
+                'conversation_memory': {
+                    'recent': [{'role': 'user', 'content': 'This has no known owner.'}],
+                },
+            },
+            'conversation_memory_enabled': True,
+        }
+
+        context = session.make_volley_context(volley)[0]['content']
+
+        self.assertNotIn('This has no known owner', context)
+        self.assertIn('legacy_unscoped', volley.persist_data['conversation_memory'])
+
     def test_homework_solves_spoken_arithmetic_without_ai(self):
         homework = SinglePromptChat.objects.get(
             module_id='OPENMOXIE_HOMEWORK', content_id='default'
@@ -760,6 +837,67 @@ class ParentSafetyAndVoiceTests(TestCase):
             transcript_files = list(__import__('pathlib').Path(directory).glob('transcripts/*/*.txt'))
             self.assertEqual(len(transcript_files), 1)
             self.assertIn('PARENT REVIEW', transcript_files[0].read_text(encoding='utf-8'))
+
+    @patch('hive.views.get_instance')
+    def test_parent_review_metric_links_to_exact_flagged_conversation(self, get_instance):
+        get_instance.return_value.robot_data.return_value.connected_list.return_value = []
+        get_instance.return_value.service_status.return_value = {'broker_connected': True}
+        event = ConversationEvent.objects.create(
+            device=self.device,
+            role='user',
+            text='Flagged conversation entry',
+            safety_flagged=True,
+            safety_categories=['parent review test'],
+        )
+        review_date = timezone.localtime(event.created_at).date().isoformat()
+        expected_url = (
+            f"{reverse('hive:transcripts', args=[self.device.pk])}"
+            f"?date={review_date}#event-{event.pk}"
+        )
+
+        dashboard = self.client.get(reverse('hive:dashboard'))
+        transcript = self.client.get(
+            reverse('hive:transcripts', args=[self.device.pk]),
+            {'date': review_date},
+        )
+
+        self.assertContains(dashboard, 'Parent review today')
+        self.assertContains(dashboard, '1 flagged')
+        self.assertContains(dashboard, expected_url)
+        self.assertContains(transcript, f'id="event-{event.pk}"')
+
+    @patch('hive.views.get_instance')
+    def test_family_page_shows_memory_provenance_audit(self, get_instance):
+        robot_data = get_instance.return_value.robot_data.return_value
+        robot_data.get_config_for_device.return_value = DEFAULT_ROBOT_CONFIG
+        robot_data.get_persist_for_device.return_value = {
+            'active_speaker': 'Avery',
+            'conversation_memory': {
+                'version': 2,
+                'profiles': {
+                    'Avery': {'items': [{
+                        'kind': 'conversation_turn',
+                        'role': 'user',
+                        'content': 'Avery likes astronomy.',
+                        'provenance': {
+                            'speaker': 'Avery',
+                            'source': 'conversation',
+                            'source_event_id': 'source-123',
+                            'module_id': 'OPENMOXIE_CHAT',
+                            'content_id': 'default',
+                            'captured_at': '2026-08-30T10:00:00-04:00',
+                        },
+                    }]},
+                },
+            },
+        }
+
+        response = self.client.get(reverse('hive:moxie', args=[self.device.pk]))
+
+        self.assertContains(response, 'Memory audit')
+        self.assertContains(response, 'Active: Avery')
+        self.assertContains(response, 'Avery likes astronomy.')
+        self.assertContains(response, 'source-123')
 
     @patch('hive.views.get_instance')
     def test_live_activity_returns_conversation_and_redacts_status(self, get_instance):
