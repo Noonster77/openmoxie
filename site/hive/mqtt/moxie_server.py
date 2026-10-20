@@ -95,7 +95,7 @@ class MoxieServer:
         self._client_metrics = {}
         self._connect_pattern = re.compile(r"connected from (.*?) as (d_[a-z0-9_-]+)", re.IGNORECASE)
         self._disconnect_pattern = re.compile(
-            r"Client (d_[a-z0-9_-]+) (?:closed its connection|disconnected|has exceeded timeout)",
+            r"Client (d_[a-z0-9_-]+) (?:\[[^\]]+\] )?(?:closed its connection|disconnected|has exceeded timeout)",
             re.IGNORECASE,
         )
         self._worker_queue = concurrent.futures.ThreadPoolExecutor(max_workers=5)
@@ -105,6 +105,7 @@ class MoxieServer:
         self._state_worker_queue = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self._device_init_lock = threading.Lock()
         self._device_init_futures = {}
+        self._connection_epoch = 0
         # Sidecar-derived invariant: connect arming is best effort; the first
         # real device event latches the gate once the perception stack exists.
         # Never turn this into a heartbeat: repeated arms have crashed robot
@@ -253,6 +254,16 @@ class MoxieServer:
             last_broker_disconnect=self._timestamp(),
             last_connect_error=message,
         )
+        # Broker notifications are not retained. Connections known before an
+        # outage must be rediscovered from fresh connect/state/event traffic.
+        # Conversation memory is persisted as it changes, independently of this cache.
+        with self._device_init_lock:
+            self._connection_epoch += 1
+            self._device_init_futures.clear()
+            self._robot_data.invalidate_connections()
+        self._vision_armed_devices.clear()
+        self._vision_power_state.clear()
+        self._vision_stale_episodes.clear()
 
     # Entry point for ALL incoming messages, extract params about source and route
     def on_message(self, client, userdata, msg):
@@ -435,13 +446,19 @@ class MoxieServer:
         self.send_command_to_bot_json(device_id, 'query_result', { 'command': 'query_result', 'query': 'mentor_behaviors', 'request_id': req_id, 'mentor_behaviors': mbh} )
 
     # NOTE: Called from worker thread pool
-    def on_device_connect(self, device_id, connected, ip_addr=None):
+    def on_device_connect(self, device_id, connected, ip_addr=None, connection_epoch=None):
         if connected:
+            epoch = getattr(self, '_connection_epoch', 0)
+            if connection_epoch is not None and connection_epoch != epoch:
+                return False
             logger.info(f'Moxie CONNECTED {device_id} from {ip_addr}')
             try:
-                self._robot_data.db_connect(device_id)
+                if not self._robot_data.db_connect(device_id):
+                    return False
                 # Sleep to avoid sending sub/config before client is ready
                 time.sleep(1.0)
+                if epoch != getattr(self, '_connection_epoch', 0):
+                    return False
                 self.send_config_to_bot_json(device_id, self._robot_data.get_config(device_id))
                 # subscribe to ZMQ STT
                 sub = ProtoSubscribe()
@@ -478,7 +495,9 @@ class MoxieServer:
                 return current
             if self._robot_data.connect_init_needed(device_id):
                 logger.info(f"Unconnected robot {device_id} location {info}. Connecting now.")
-                new_future = self._submit_worker(self.on_device_connect, device_id, True, info)
+                new_future = self._submit_worker(
+                    self.on_device_connect, device_id, True, info, self._connection_epoch,
+                )
                 self._device_init_futures[device_id] = new_future
         # Register outside the lock: add_done_callback executes immediately when a
         # fast failure already completed, and the callback takes the same lock.
@@ -539,7 +558,12 @@ class MoxieServer:
         ).order_by('-created_at').first()
         if not command:
             return False
-        target = command.action if command.action in ('homework', 'reasoning', 'trivia', 'jokes', 'vision', 'ispy') else 'chat'
+        targets = {
+            'wake': 'chat', 'chat': 'chat', 'interrupt': 'chat',
+            'homework': 'homework', 'reasoning': 'reasoning', 'trivia': 'trivia',
+            'jokes': 'jokes', 'vision': 'vision', 'ispy': 'ispy',
+        }
+        target = targets.get(command.action)
         module_id = {
             'chat': 'OPENMOXIE_CHAT',
             'homework': 'OPENMOXIE_HOMEWORK',
@@ -563,7 +587,8 @@ class MoxieServer:
             'vision': 'My local camera mode is ready. Ask me what I see.',
             'ispy': 'I spy with my little eye something in this room!',
         }[target]
-        self.queue_remote_action_to_bot(device_id, 'launch', module_id, 'default', text)
+        if not self.queue_remote_action_to_bot(device_id, 'launch', module_id, 'default', text):
+            return False
         self.send_telehealth_interrupt(device_id)
         if not self.send_wakeup_to_bot(device_id):
             logger.warning('Pending %s command remains pending for %s', command.action, device_id)
@@ -598,6 +623,10 @@ class MoxieServer:
             return False
         self._remote_chat.queue_control(device_id, action, module_id, content_id, text)
         return True
+
+    def cancel_remote_action_to_bot(self, device_id, action):
+        """Remove a fallback whose dashboard request failed to dispatch."""
+        return self._remote_chat.clear_control(device_id, action=action)
 
     # Send Moxie its configuration data
     def send_config_to_bot_json(self, device_id, payload: dict):

@@ -76,13 +76,15 @@ class RobotData:
 
     # Called when Robot connects to the MQTT network from a worker thread
     def db_connect(self, robot_id):
+        connection_map = self._robot_map
         if robot_id in self._robot_map:
             # Known only when cache record isnt empty
             if self._robot_map[robot_id]:
                 logger.info(f'Device {robot_id} already known.')
-                return
+                return True
         logger.info(f'Device {robot_id} is LOADING.')
-        run_db_atomic(self.init_from_db, robot_id)
+        run_db_atomic(self.init_from_db, robot_id, connection_map)
+        return self._robot_map is connection_map
 
     # Called when a Robot disconnects from the MQTT network from a worker thread
     def db_release(self, robot_id):
@@ -107,6 +109,11 @@ class RobotData:
     # Check if a device is online
     def device_online(self, robot_id):
         return robot_id in self._robot_map
+
+    def invalidate_connections(self):
+        """Discard connection evidence after losing the broker's notification stream."""
+        # Detach the old map so an in-flight DB initializer cannot repopulate it.
+        self._robot_map = {}
     
     # Get a list of online robots
     def connected_list(self):
@@ -144,7 +151,10 @@ class RobotData:
         return deepmerge.always_merger.merge(base_cfg, robot_cfg)
 
     # Load/create records for a Robot
-    def init_from_db(self, robot_id):
+    def init_from_db(self, robot_id, connection_map=None):
+        if connection_map is None:
+            connection_map = self._robot_map
+        record = {'schedule': DEFAULT_SCHEDULE}
         device, created = MoxieDevice.objects.get_or_create(device_id=robot_id)
         curr_cfg = HiveConfiguration.objects.filter(name='default').first()
         device.last_connect = timezone.now()
@@ -154,22 +164,23 @@ class RobotData:
             if schedule:
                 logger.info(f'Setting schedule to {schedule}')
                 device.schedule = schedule
-                self._robot_map[robot_id] = { "schedule": schedule.schedule }
+                record['schedule'] = schedule.schedule
             else:
                 logger.warning('Failed to locate default schedule.')
         else:
             logger.info(f'Existing model for this device {robot_id}')
-            self._robot_map[robot_id] = { "schedule": device.schedule.schedule if device.schedule else DEFAULT_SCHEDULE }
+            record['schedule'] = device.schedule.schedule if device.schedule else DEFAULT_SCHEDULE
         # build our config
-        self._robot_map[robot_id]["config"] = self.build_config(device, curr_cfg)
+        record['config'] = self.build_config(device, curr_cfg)
         # load our robot's persistent data
         persistent_data, persistent_data_created = PersistentData.objects.get_or_create(device=device, defaults={'data': {}})
-        nickname = self._robot_map[robot_id]["config"].get('child_pii', {}).get('nickname')
+        nickname = record['config'].get('child_pii', {}).get('nickname')
         if nickname and 'active_speaker' not in persistent_data.data:
             persistent_data.data['active_speaker'] = nickname
             persistent_data.save(update_fields=['data'])
-        self._robot_map[robot_id]["persistent_data"] = persistent_data
+        record['persistent_data'] = persistent_data
         device.save()
+        connection_map[robot_id] = record
 
     # Finalize device record on disconnect
     def release_to_db(self, robot_id):

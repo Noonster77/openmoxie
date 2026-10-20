@@ -822,10 +822,10 @@ def _interrupt_and_launch(service, device, module_id, content_id='default', text
     """Interrupt the current activity, wake if needed, and launch with a schedule fallback."""
     if not service.robot_data().device_online(device.device_id):
         return False
-    service.queue_remote_action_to_bot(device.device_id, 'launch', module_id, content_id, text)
+    if not service.queue_remote_action_to_bot(device.device_id, 'launch', module_id, content_id, text):
+        return False
     service.send_telehealth_interrupt(device.device_id)
-    service.send_wakeup_to_bot(device.device_id)
-    return True
+    return bool(service.send_wakeup_to_bot(device.device_id))
 
 
 @require_http_methods(["POST"])
@@ -846,6 +846,7 @@ def robot_control(request, pk):
     if device.vision_active and action not in ('vision', 'ispy'):
         set_device_vision(device, False, service=service)
     online = service.robot_data().device_online(device.device_id)
+    sent = False
     message = ''
     duplicate = RobotCommandEvent.objects.filter(
         device=device,
@@ -890,6 +891,7 @@ def robot_control(request, pk):
                 'ispy': 'I spy with my little eye something in this room!',
             }[target],
         )
+        sent = immediate
         label = {'wake': 'Wake and Chat', 'interrupt': 'Return to Chat'}.get(action, action.title())
         message = label + (' requested; waiting for Moxie to confirm the activity.' if immediate else ' queued for the next connection.')
     elif action == 'vision_off':
@@ -906,11 +908,14 @@ def robot_control(request, pk):
             # Wake is also used as a router nudge. If Moxie is already awake it is
             # harmless; if she is between activities it causes the request that
             # consumes the queued sleep action instead of launching a schedule.
-            service.send_wakeup_to_bot(device.device_id)
+            wake_sent = service.send_wakeup_to_bot(device.device_id)
+            sent = sent and wake_sent
+            if not sent:
+                service.cancel_remote_action_to_bot(device.device_id, 'sleep')
         else:
             sent = False
-        message = 'Sleep requested. Waiting for Moxie to report sleep; voice fallback: “Go to sleep, please.”' if sent else 'Moxie is offline; no sleep command was sent.'
-    command_status = 'confirmed' if action == 'vision_off' else ('sent' if online else (
+        message = 'Sleep requested. Waiting for Moxie to report sleep; voice fallback: “Go to sleep, please.”' if sent else 'Sleep could not be sent; check Moxie’s connection and try again.'
+    command_status = 'confirmed' if action == 'vision_off' else ('sent' if sent else (
         'queued' if action in ('wake', 'chat', 'homework', 'reasoning', 'trivia', 'jokes', 'vision', 'ispy', 'interrupt') else 'failed'
     ))
     RobotCommandEvent.objects.create(

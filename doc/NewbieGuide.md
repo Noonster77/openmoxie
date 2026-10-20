@@ -213,7 +213,13 @@ Confirm that the model is loaded, the LM Studio server is running on port `1234`
 
 ### Moxie stays offline
 
-Confirm that Moxie and the computer are on the same home network. Recheck the IPv4 address saved in Setup, create a new Migration QR, and repeat the migration step.
+1. Keep Docker Desktop running and open `http://localhost:8001/hive`. Both OpenMoxie containers must be running.
+2. Turn Moxie off with her normal power switch, wait about 20 seconds, then turn her back on. Allow a few minutes for startup and Wi-Fi reconnection.
+3. Watch the Control Center connection and live Mode. Once connected, select **Wake & Chat** once and wait for robot confirmation. A queued or sent request alone does not confirm that Moxie received it.
+4. If she stays offline, confirm that Moxie and the computer are on the same home network, without guest-network isolation. Check that the computer's current IPv4 address matches Setup and that Windows Firewall allows the MQTT connection on Private networks (TCP port `8883`).
+5. If the computer's address changed, update Setup, create a new Migration QR, and repeat the migration step. Repeated wake clicks cannot reconnect an offline robot.
+
+If Moxie connects briefly and disconnects again without reporting a live state, record the time and inspect the broker logs. This establishes a connection failure; it does not by itself establish a hardware fault.
 
 ### You forgot the administrator password
 

@@ -25,6 +25,48 @@ from .mqtt import ai_factory
 
 
 class MQTTServiceTests(SimpleTestCase):
+    @patch('hive.mqtt.moxie_server.MoxieServer.update_from_database')
+    @patch('hive.mqtt.moxie_server.mqtt.Client')
+    def test_broker_disconnect_formats_release_robot(self, _client, _update):
+        server = MoxieServer(SimpleNamespace(device_id='d_supervisor'), MagicMock(), 'test', 'mqtt', 8883, False)
+        self.addCleanup(server._worker_queue.shutdown)
+        self.addCleanup(server._state_worker_queue.shutdown)
+        server._submit_worker = MagicMock()
+        for line in (
+            'Client d_robot disconnected.',
+            'Client d_robot closed its connection.',
+            'Client d_robot has exceeded timeout, disconnecting.',
+            'Client d_robot [172.18.0.1:57528] disconnected: connection closed by client.',
+            'Client d_robot [fe80::1:57528] disconnected: exceeded timeout.',
+            'Client d_robot [172.18.0.1:57528] disconnected: session taken over.',
+        ):
+            with self.subTest(line=line):
+                server._submit_worker.reset_mock()
+                server.on_sys_log_message('N', SimpleNamespace(payload=line.encode()))
+                server._submit_worker.assert_called_once_with(server.on_device_connect, 'd_robot', False)
+
+    def test_broker_outage_invalidates_cached_robot_connections(self):
+        server = MoxieServer.__new__(MoxieServer)
+        server._status_lock = threading.Lock()
+        server._status = {}
+        server._device_init_lock = threading.Lock()
+        server._device_init_futures = {}
+        server._connection_epoch = 0
+        server._robot_data = RobotData.__new__(RobotData)
+        server._robot_data._robot_map = {'d_robot': {'state': {'mode': 'active'}}}
+        server._vision_armed_devices = {'d_robot'}
+        server._vision_power_state = {'d_robot': 'RUNNING'}
+        server._vision_stale_episodes = {'d_robot': 1}
+
+        server.on_disconnect(None, None, 1)
+
+        self.assertFalse(server._status['broker_connected'])
+        self.assertFalse(server._robot_data.device_online('d_robot'))
+        self.assertEqual(server._robot_data.connected_list(), [])
+        self.assertEqual(server._robot_data.connected_details(), {})
+        self.assertEqual(server._vision_armed_devices, set())
+        self.assertTrue(server._robot_data.connect_init_needed('d_robot'))
+
     def test_sqlite_is_configured_for_bounded_concurrent_writes(self):
         options = settings.DATABASES['default']['OPTIONS']
 
@@ -109,6 +151,54 @@ class MQTTServiceTests(SimpleTestCase):
 
 
 class RobotStateTests(TestCase):
+    def test_initialization_from_before_broker_outage_cannot_restore_online(self):
+        device = MoxieDevice.objects.create(device_id='d_old_connection')
+        robot_data = RobotData.__new__(RobotData)
+        robot_data._robot_map = {device.device_id: {}}
+        old_map = robot_data._robot_map
+        robot_data.invalidate_connections()
+
+        robot_data.init_from_db(device.device_id, old_map)
+
+        self.assertFalse(robot_data.device_online(device.device_id))
+        self.assertIn('config', old_map[device.device_id])
+
+    def test_queued_initializer_from_before_broker_outage_is_skipped(self):
+        server = MoxieServer.__new__(MoxieServer)
+        server._connection_epoch = 1
+        server._robot_data = MagicMock()
+        self.assertFalse(server.on_device_connect('d_old', True, connection_epoch=0))
+        server._robot_data.db_connect.assert_not_called()
+
+    def test_pending_sleep_is_never_replayed_as_chat(self):
+        device = MoxieDevice.objects.create(device_id='d_sleep_reconnect')
+        command = RobotCommandEvent.objects.create(device=device, action='sleep', status='sent')
+        server = MoxieServer.__new__(MoxieServer)
+        server.queue_remote_action_to_bot = MagicMock()
+        server.send_wakeup_to_bot = MagicMock()
+
+        self.assertFalse(server._resume_pending_command(device.device_id))
+
+        command.refresh_from_db()
+        self.assertEqual(command.status, 'failed')
+        server.queue_remote_action_to_bot.assert_not_called()
+        server.send_wakeup_to_bot.assert_not_called()
+
+    def test_failed_reconnect_delivery_remains_pending(self):
+        device = MoxieDevice.objects.create(device_id='d_failed_reconnect')
+        command = RobotCommandEvent.objects.create(device=device, action='wake', status='queued')
+        server = MoxieServer.__new__(MoxieServer)
+        server.queue_remote_action_to_bot = MagicMock(return_value=False)
+        server.send_wakeup_to_bot = MagicMock(return_value=True)
+        self.assertFalse(server._resume_pending_command(device.device_id))
+        server.send_wakeup_to_bot.assert_not_called()
+        server.queue_remote_action_to_bot.return_value = True
+        server.send_telehealth_interrupt = MagicMock()
+        server.send_wakeup_to_bot.return_value = False
+        self.assertFalse(server._resume_pending_command(device.device_id))
+        command.refresh_from_db()
+        self.assertEqual(command.status, 'queued')
+
     def test_first_partial_state_does_not_crash_when_previous_state_is_null(self):
         device = MoxieDevice.objects.create(device_id="d_first_state")
         robot_data = RobotData.__new__(RobotData)
@@ -197,6 +287,34 @@ class WakeControlTests(TestCase):
     def setUp(self):
         self.schedule = MoxieSchedule.objects.create(name="test", schedule={"provided_schedule": []})
         self.device = MoxieDevice.objects.create(device_id="d_wake", schedule=self.schedule)
+
+    @patch('hive.views.get_instance')
+    def test_failed_activity_delivery_is_queued_instead_of_sent(self, get_instance):
+        service = get_instance.return_value
+        service.robot_data.return_value.device_online.return_value = True
+        for queue_result, wake_result in ((False, True), (True, False)):
+            with self.subTest(queue_result=queue_result, wake_result=wake_result):
+                RobotCommandEvent.objects.all().delete()
+                service.reset_mock()
+                service.queue_remote_action_to_bot.return_value = queue_result
+                service.send_wakeup_to_bot.return_value = wake_result
+                response = self.client.post(reverse('hive:robot_control', args=[self.device.pk]), {'action': 'chat', 'ajax': '1'})
+                self.assertEqual(response.status_code, 200)
+                command = RobotCommandEvent.objects.get()
+                self.assertEqual(command.status, 'queued')
+                self.assertIn('queued for the next connection', command.detail)
+                if not queue_result:
+                    service.send_wakeup_to_bot.assert_not_called()
+
+    @patch('hive.views.get_instance')
+    def test_failed_sleep_delivery_is_not_reported_as_sent(self, get_instance):
+        service = get_instance.return_value
+        service.robot_data.return_value.device_online.return_value = True
+        service.queue_remote_action_to_bot.return_value = True
+        service.send_wakeup_to_bot.return_value = False
+        self.client.post(reverse('hive:robot_control', args=[self.device.pk]), {'action': 'sleep'})
+        self.assertEqual(RobotCommandEvent.objects.get().status, 'failed')
+        service.cancel_remote_action_to_bot.assert_called_once_with('d_wake', 'sleep')
 
     @patch("hive.views.get_instance")
     def test_wake_enables_button_support_before_sending_command(self, get_instance):
