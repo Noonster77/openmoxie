@@ -15,6 +15,7 @@ This repository is a community fork of [Justin Beghtol’s original OpenMoxie pr
 - Fast homework help, conversation memory and local transcripts, family speaker profiles, privacy deletion, and conservative parent-review flags.
 - Editable, selectable joke and trivia collections. Knock-knock jokes now pause for “Who’s there?” and “Name who?” before delivering the punchline.
 - More than 100 family jokes and an expanded no-repeat trivia library with 100 additional reviewed questions in each of six categories.
+- An optional local Vision extension with object questions, an I Spy game, latest-frame controls, conservative face enrollment, and exact camera-setting rollback. Its camera-gate implementation builds on AppleMelonOrange's Sidecar research.
 
 ## Easiest install
 
@@ -28,13 +29,18 @@ You need:
 ### Windows
 
 1. Download this repository with **Code → Download ZIP**, then extract it. Git is optional.
-2. Install and start Docker Desktop.
-3. Double-click `start-openmoxie.bat`.
-4. Wait for the browser to open `http://localhost:8001/hive`.
-5. Complete Setup, save, and use **Test saved AI**.
-6. Open **Migration QR** in the Control Center and show it to Moxie.
+2. Install Docker Desktop and LM Studio, then open each once.
+3. Double-click `OPENMOXIE-LAUNCHER.bat`.
+4. Choose **1** for ordinary OpenMoxie or **2** for OpenMoxie with optional Vision. The first-time choices build the required images, verify the recommended Qwen3.5 model, and start everything.
+5. Wait for the browser to open `http://localhost:8001/hive`.
+6. Complete Setup, save, and use **Test saved AI**.
+7. Open **Migration QR** in the Control Center and show it to Moxie.
 
-For the recommended local model, double-click `setup-lm-studio-model.bat` first. It downloads and loads Qwen3.5 9B Q4_K_S through LM Studio, starts port 1234, and prints the exact Setup values.
+For later use, open the same launcher and choose **3** or **4**. Those start choices use existing images and never rebuild. If an image is missing, the launcher tells you which first-time build to run. Start also verifies that LM Studio is serving `qwen_qwen3.5-9b.gguf` and that OpenMoxie can reach it.
+
+Vision is optional and requires an internal DNS redirect. The Wi-Fi router's DHCP settings must give Moxie the local DNS resolver that maps the two hard-coded Embodied Vision hostnames to the OpenMoxie computer. If a beginner does not know how to configure that, the launcher automatically installs ordinary OpenMoxie instead. Vision can be added later with option **2**, and option **5** opens the guided DNS setup and verifier. The QR and Windows hosts file cannot redirect DNS for Moxie. Read [Optional local vision](doc/Vision.md) before enabling face enrollment.
+
+`setup-lm-studio-model.bat` remains available as a standalone repair/setup tool. The recommended model download is approximately 6.5 GB.
 
 ### macOS or Linux
 
@@ -93,12 +99,14 @@ docker compose exec server python3 site/manage.py createsuperuser --username YOU
 
 ## Everyday use
 
-The Control Center can start Chat, Homework, Reasoning, Trivia, Jokes, and Sleep. Common voice requests include:
+The Control Center can start Chat, Homework, Reasoning, Trivia, Jokes, optional Vision/I Spy, and Sleep. Common voice requests include:
 
 - “Moxie, start reasoning mode.”
 - “Moxie, start homework mode.”
 - “Moxie, play trivia.”
 - “Moxie, tell me some jokes.”
+- “Moxie, start vision mode.” (optional extension)
+- “Moxie, play I Spy.” (optional extension)
 - “Talk about something else.”
 - “Go to sleep, please.”
 
@@ -106,7 +114,7 @@ Reasoning answers may take two or three minutes on a large local model. Moxie re
 
 ## Safety and privacy
 
-Keep ports `8001` and `8883` private. Do not port-forward them or expose this development server to the Internet. MQTT intentionally accepts Moxie on the local network, stored service keys are not encrypted, and keyword safety flags can miss context or produce false alarms. This project does not replace adult supervision.
+Keep ports `443`, `8001`, and `8883` private. Do not port-forward them or expose this development server to the Internet. MQTT intentionally accepts Moxie on the local network, stored service keys are not encrypted, object/face recognition can be wrong, and keyword safety flags can miss context or produce false alarms. This project does not replace adult supervision.
 
 Before sharing a bug report, remove API keys, passwords, device IDs, names, logs, and transcripts. This is the only repository content intended to be public; runtime data in `local/work` must remain private.
 
@@ -119,8 +127,8 @@ python site/manage.py check
 python site/manage.py test hive
 ```
 
-See [Contributing](doc/Contributing.md), [Alpha testing](doc/AlphaTesting.md), [Moxie overview](doc/MoxieOverview.md), and the [remote module API](doc/RemoteModuleAPI.md).
+See [Contributing](doc/Contributing.md), the [family use and release guide](doc/AlphaTesting.md), [Moxie overview](doc/MoxieOverview.md), and the [remote module API](doc/RemoteModuleAPI.md).
 
 ## License
 
-OpenMoxie is open source under the [MIT License](LICENSE). You may use, copy, modify, and share it under those terms. Upstream copyright and license notices are preserved.
+OpenMoxie is open source under the [MIT License](LICENSE). You may use, copy, modify, and share it under those terms. Upstream copyright and license notices are preserved. See [Credits and third-party notices](doc/ThirdPartyNotices.md) for Justin Beghtol's original project, AppleMelonOrange's Sidecar work, and Noonster77's subsequent family-fork work.

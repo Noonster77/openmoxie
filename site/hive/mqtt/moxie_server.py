@@ -20,7 +20,8 @@ from .protos.embodied.logging.Log_pb2 import ProtoSubscribe
 from .protos.embodied.logging.Cloud2_pb2 import ServiceConfiguration2
 from .protos.embodied.wifiapp.QRCommands_pb2 import StartPairingQR
 from .zmq_stt_handler import STTHandler
-from ..models import HiveConfiguration, RobotCommandEvent
+from .vision_protocol import POWER_RUNNING, parse_power_state, vision_gate_payloads
+from ..models import HiveConfiguration, MoxieDevice, RobotCommandEvent
 
 _BASIC_FORMAT = '{1}'
 _MOXIE_SERVICE_INSTANCE = None
@@ -104,6 +105,16 @@ class MoxieServer:
         self._state_worker_queue = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self._device_init_lock = threading.Lock()
         self._device_init_futures = {}
+        # Sidecar-derived invariant: connect arming is best effort; the first
+        # real device event latches the gate once the perception stack exists.
+        # Never turn this into a heartbeat: repeated arms have crashed robot
+        # audio hardware in live Sidecar testing.
+        self._vision_armed_devices = set()
+        self._vision_power_state = {}
+        self._vision_stale_episodes = {}
+        self._vision_watchdog_stop = threading.Event()
+        self._vision_watchdog_thread = None
+        self._vision_extension_enabled = False
         self._status_lock = threading.Lock()
         self._status = {
             "broker_connected": False,
@@ -280,6 +291,9 @@ class MoxieServer:
             if match:
                 self.check_device_connect(match.group(2), match.group(1))
             elif match2:
+                getattr(self, '_vision_armed_devices', set()).discard(match2.group(1))
+                getattr(self, '_vision_power_state', {}).pop(match2.group(1), None)
+                getattr(self, '_vision_stale_episodes', {}).pop(match2.group(1), None)
                 self._submit_worker(self.on_device_connect, match2.group(1), False)
 
     # Handles metrics from mosquitto
@@ -302,6 +316,8 @@ class MoxieServer:
                 if future.result() else None
             )
             return
+        self._arm_active_vision(device_id)
+        self._handle_vision_power_event(device_id, eventname, msg)
         if eventname == "remote-chat" or eventname == "remote-chat-staging":
             rcr = json.loads(msg.payload)
             if rcr.get('backend') == "data" and rcr.get('query',{}).get('query') == "modules":
@@ -348,7 +364,8 @@ class MoxieServer:
                 th_state = csa["message"].get("state")
                 if th_state:
                     self._robot_data.put_puppet_state(device_id, th_state)
-        elif _PROVIDE_HTTP_TOKENS and eventname=="client-service-http-token":
+        elif getattr(self, '_vision_extension_enabled', False) and eventname == "client-service-http-token" and MoxieDevice.objects.filter(
+                device_id=device_id, vision_active=True).exists():
             # There are no services to use them, but if enabled we respond with a 'notoken' access token
             logger.info(f"Sending HTTP TOKEN to device {device_id}")
             self.send_command_to_bot_json(device_id, 'http_token',
@@ -402,6 +419,12 @@ class MoxieServer:
             command.detail = f'Robot reported mode: {mode}'
             command.save(update_fields=['status', 'detail', 'updated_at'])
         if mode == 'sleep':
+            device = MoxieDevice.objects.filter(device_id=device_id, vision_active=True).first()
+            if device:
+                # Sleep is a privacy boundary. Restore the pre-vision settings
+                # even when sleep was requested by voice instead of the UI.
+                from ..vision import set_device_vision
+                set_device_vision(device, False, service=self)
             if self._remote_chat.clear_control(device_id, action='sleep'):
                 logger.info('Cleared delivered sleep fallback for %s', device_id)
 
@@ -426,6 +449,10 @@ class MoxieServer:
                 sub.timestamp = now_ms()
                 logger.debug('Subscribed to ZMQ STT')
                 self.send_zmq_to_bot(device_id, sub)
+                # Best-effort boot arm. The first subsequent event performs the
+                # latching arm because the native vision listener may start late.
+                if getattr(self, '_vision_extension_enabled', False) and MoxieDevice.objects.filter(device_id=device_id, vision_active=True).exists():
+                    self.set_vision_gate(device_id, True, latch=False)
                 self._resume_pending_command(device_id)
                 return True
             except Exception:
@@ -435,6 +462,9 @@ class MoxieServer:
                 logger.exception("Failed to initialize connected Moxie %s", device_id)
                 return False
         else:
+            getattr(self, '_vision_armed_devices', set()).discard(device_id)
+            getattr(self, '_vision_power_state', {}).pop(device_id, None)
+            getattr(self, '_vision_stale_episodes', {}).pop(device_id, None)
             self._robot_data.db_release(device_id)
             logger.info(f'Moxie DISCONNECTED {device_id}')
             return True
@@ -509,13 +539,15 @@ class MoxieServer:
         ).order_by('-created_at').first()
         if not command:
             return False
-        target = command.action if command.action in ('homework', 'reasoning', 'trivia', 'jokes') else 'chat'
+        target = command.action if command.action in ('homework', 'reasoning', 'trivia', 'jokes', 'vision', 'ispy') else 'chat'
         module_id = {
             'chat': 'OPENMOXIE_CHAT',
             'homework': 'OPENMOXIE_HOMEWORK',
             'reasoning': 'OPENMOXIE_REASONING',
             'trivia': 'OPENMOXIE_TRIVIA',
             'jokes': 'OPENMOXIE_JOKES',
+            'vision': 'OPENMOXIE_VISION',
+            'ispy': 'OPENMOXIE_ISPY',
         }.get(target)
         if not module_id:
             command.status = 'failed'
@@ -528,6 +560,8 @@ class MoxieServer:
             'reasoning': 'Reasoning mode is ready. Ask me a complex question.',
             'trivia': 'Trivia time! Get your thinking cap ready.',
             'jokes': "Joke time! I've got some good ones ready.",
+            'vision': 'My local camera mode is ready. Ask me what I see.',
+            'ispy': 'I spy with my little eye something in this room!',
         }[target]
         self.queue_remote_action_to_bot(device_id, 'launch', module_id, 'default', text)
         self.send_telehealth_interrupt(device_id)
@@ -578,6 +612,94 @@ class MoxieServer:
         payload = (msgobject.DESCRIPTOR.full_name + ":").encode('utf-8') + msgobject.SerializeToString()
         return self._publish(f"/devices/{device_id}/commands/zmq", payload)
 
+    def set_vision_gate(self, device_id, enabled, latch=True):
+        """Open or close the native IC gate with Sidecar-compatible payloads."""
+        if not hasattr(self, '_vision_armed_devices'):
+            self._vision_armed_devices = set()
+        for payload in vision_gate_payloads(now_ms(), enabled):
+            self._publish(f"/devices/{device_id}/commands/zmq", payload)
+        if enabled and latch:
+            self._vision_armed_devices.add(device_id)
+        elif not enabled:
+            self._vision_armed_devices.discard(device_id)
+        logger.info('Vision gate %s for %s', 'armed' if enabled else 'closed', device_id)
+
+    def _arm_active_vision(self, device_id):
+        if not getattr(self, '_vision_extension_enabled', False):
+            return False
+        if not hasattr(self, '_vision_armed_devices'):
+            self._vision_armed_devices = set()
+        if device_id in self._vision_armed_devices:
+            return False
+        if not MoxieDevice.objects.filter(device_id=device_id, vision_active=True).exists():
+            return False
+        self.set_vision_gate(device_id, True, latch=True)
+        return True
+
+    def _handle_vision_power_event(self, device_id, eventname, msg):
+        """Re-arm once after an observed sleep-to-running transition."""
+        if eventname != 'zmq' or not getattr(self, '_vision_extension_enabled', False):
+            return False
+        state = parse_power_state(msg.payload)
+        if state is None:
+            return False
+        if not hasattr(self, '_vision_power_state'):
+            self._vision_power_state = {}
+        previous = self._vision_power_state.get(device_id)
+        self._vision_power_state[device_id] = state
+        if state != POWER_RUNNING or previous is None or previous == POWER_RUNNING:
+            return False
+        if not MoxieDevice.objects.filter(device_id=device_id, vision_active=True).exists():
+            return False
+        # The wake event itself is usually too early. Send one best-effort arm,
+        # then unlatch so the next real perception event performs the latching
+        # arm. This is event-driven, never a repeating heartbeat.
+        self.set_vision_gate(device_id, True, latch=False)
+        self._vision_armed_devices.discard(device_id)
+        logger.info('Vision wake re-arm staged for %s after power %s->RUNNING', device_id, previous)
+        return True
+
+    def _vision_stale_tick(self):
+        """Bound recovery to two arms until real frame flow resumes."""
+        if not getattr(self, '_vision_extension_enabled', False):
+            return
+        from ..vision import latest_observation
+        observation = latest_observation(max_age=120)
+        age = observation.get('age_seconds')
+        if age is None:
+            return
+        if not hasattr(self, '_vision_stale_episodes'):
+            self._vision_stale_episodes = {}
+        if age <= 120:
+            self._vision_stale_episodes.clear()
+            return
+        now = time.monotonic()
+        for device in MoxieDevice.objects.filter(vision_active=True):
+            if getattr(self, '_vision_power_state', {}).get(device.device_id) != POWER_RUNNING:
+                continue
+            if not self._robot_data.device_online(device.device_id):
+                continue
+            episode = self._vision_stale_episodes.setdefault(
+                device.device_id, {'arms': 0, 'last_arm': 0.0},
+            )
+            if episode['arms'] == 0 or (
+                    episode['arms'] == 1 and now - episode['last_arm'] >= 300):
+                self.set_vision_gate(device.device_id, True, latch=True)
+                episode['arms'] += 1
+                episode['last_arm'] = now
+                logger.info(
+                    'Vision stale-frame recovery %s/2 for %s (age %.1fs)',
+                    episode['arms'], device.device_id, age,
+                )
+
+    def _vision_watchdog_loop(self):
+        stop = self._vision_watchdog_stop
+        while not stop.wait(30):
+            try:
+                self._vision_stale_tick()
+            except Exception:
+                logger.exception('Vision stale-frame check failed (ignored)')
+
     def _publish(self, topic, payload):
         result = self._client.publish(topic, payload=payload)
         if result.rc != mqtt.MQTT_ERR_SUCCESS:
@@ -591,9 +713,23 @@ class MoxieServer:
         self.send_command_to_bot_json(device_id, "telehealth", payload={ "command": "telehealth", "message": msg })
 
     # Send Telehealth - PLAY message to Moxie
-    def send_telehealth_speech(self, device_id, speech:str, mood:str, intensity:float):
-        markup = self._remote_chat.make_markup(speech, (mood, intensity))
+    def send_telehealth_speech(self, device_id, speech:str, mood:str, intensity:float,
+                               sound:str = "none", gesture:str = "auto",
+                               rate:float = 1.0, vocal_style:str = "natural"):
+        from ..puppet import enhance_puppet_markup
+        markup = self._remote_chat.make_markup(speech, (mood, intensity), synth_rate=rate)
+        markup = enhance_puppet_markup(
+            markup, sound=sound, gesture=gesture, vocal_style=vocal_style,
+        )
         tmsg = { "action": "PLAY_OUTPUT", "output": { "text": speech, "markup": markup } }
+        self.send_telehealth(device_id, tmsg)
+
+    def send_telehealth_action(self, device_id, action:str):
+        from ..puppet import puppet_action_markup
+        tmsg = {
+            "action": "PLAY_OUTPUT",
+            "output": {"text": "", "markup": puppet_action_markup(action)},
+        }
         self.send_telehealth(device_id, tmsg)
 
     # Send Telehealth - INTERRUPT Moxie speaking
@@ -622,9 +758,20 @@ class MoxieServer:
     # Start client connection loop
     def start(self):
         self._client.loop_start()
+        if not getattr(self, '_vision_watchdog_thread', None):
+            if not hasattr(self, '_vision_watchdog_stop'):
+                self._vision_watchdog_stop = threading.Event()
+            self._vision_watchdog_thread = threading.Thread(
+                target=self._vision_watchdog_loop,
+                name='vision-stale-watchdog',
+                daemon=True,
+            )
+            self._vision_watchdog_thread.start()
 
     # Stop client connection loop
     def stop(self):
+        if hasattr(self, '_vision_watchdog_stop'):
+            self._vision_watchdog_stop.set()
         self._client.loop_stop()
 
     # Get's a chat session object for use in the web chat
@@ -652,6 +799,7 @@ class MoxieServer:
         if hive_config:
             configure_ai(hive_config.chat_provider, hive_config.chat_base_url, hive_config.chat_model,
                          hive_config.stt_provider, hive_config.local_stt_model, hive_config.chat_api_key)
+        self._vision_extension_enabled = bool(hive_config and hive_config.vision_extension_enabled)
         self._google_service_account = hive_config.google_api_key if hive_config else None
         self._remote_chat.update_from_database()
 

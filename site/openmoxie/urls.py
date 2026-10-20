@@ -20,10 +20,13 @@ from debug_toolbar.toolbar import debug_toolbar_urls
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic.base import RedirectView
+from hive import views as hive_views
 
 urlpatterns = [
     path('', RedirectView.as_view(url='/hive/', permanent=False), name='root'),
     path('hive/', include("hive.urls")),
+    path('admin/vision/', hive_views.vision_admin, name='vision_admin'),
+    path('admin/vision/status/', hive_views.vision_admin_status, name='vision_admin_status'),
     path('admin/', admin.site.urls),
 ] + debug_toolbar_urls()
 

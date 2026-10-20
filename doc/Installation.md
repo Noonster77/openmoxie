@@ -20,10 +20,16 @@ Persistent state is stored in `local/work`, including the SQLite database, logs,
 
 After the first setup, the two OpenMoxie containers restart automatically whenever Docker Desktop starts. They are the only required containers: `openmoxie-mqtt` and `openmoxie-server`.
 
+## Optional local vision
+
+Vision is not part of the required installation. On Windows, run `setup-vision.bat` after the base server works. It builds `openmoxie-vision`, enables the UI option, and prints the DNS records that must point Moxie's hardcoded caption hostnames to this computer. The Control Center can then start, restart, and stop the Vision container and independently open or close the camera for each robot.
+
+See [Vision](Vision.md) for DNS setup, object detection, I Spy, face enrollment, privacy, Docker-socket disclosure, and troubleshooting.
+
 ## Local AI
 
 1. Install LM Studio and load a chat GGUF.
-2. Start its local server on port 1234 and allow LAN access when prompted.
+2. Run `setup-lm-studio-model.bat`, which starts the LM Studio daemon and explicitly restarts its listener on `0.0.0.0:1234`. Merely seeing “server running” is insufficient because an earlier listener may be bound only to localhost.
 3. In OpenMoxie Setup, choose LM Studio and enter the exact model identifier.
 4. Use `http://host.docker.internal:1234/v1` from Docker Desktop.
 5. Choose local faster-whisper. `small.en` is the recommended balance.

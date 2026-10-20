@@ -15,7 +15,8 @@ def initialize_rules():
     return mlrules_utils.load_rules()
 
 
-def process(input_string, rules, mood_and_intensity: Tuple[str, float] = None, settings: Dict = None):
+def process(input_string, rules, mood_and_intensity: Tuple[str, float] = None,
+            settings: Dict = None, synth_rate: float = None):
     """
     Markup an unmarked string. Returns marked up string.
 
@@ -34,6 +35,7 @@ def process(input_string, rules, mood_and_intensity: Tuple[str, float] = None, s
                            markBehaviors=True,
                            markMoodAndIntensity=mood_and_intensity,
                            prettyPrint=False,
+                           synth_rate=synth_rate,
                            text_replacements=text_replacements,
                            debug=False)
     return result

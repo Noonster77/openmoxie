@@ -18,7 +18,7 @@ import logging
 import threading
 from datetime import datetime
 from .global_responses import GlobalResponses
-from .conversations import ChatSession, HomeworkChatSession, JokeChatSession, ReasoningChatSession, SinglePromptDBChatSession, TriviaChatSession
+from .conversations import ChatSession, HomeworkChatSession, ISpyChatSession, JokeChatSession, ReasoningChatSession, SinglePromptDBChatSession, TriviaChatSession, VisionChatSession
 from .volley import Volley
 from .conversation_log import record_conversation
 
@@ -126,6 +126,10 @@ class RemoteChat:
                     new_modules[f'{chat.module_id}/{content_id}'] = { 'xtor': HomeworkChatSession, 'params': { 'pk': chat.pk } }
                 elif chat.module_id == 'OPENMOXIE_REASONING':
                     new_modules[f'{chat.module_id}/{content_id}'] = { 'xtor': ReasoningChatSession, 'params': { 'pk': chat.pk } }
+                elif chat.module_id == 'OPENMOXIE_VISION':
+                    new_modules[f'{chat.module_id}/{content_id}'] = { 'xtor': VisionChatSession, 'params': {} }
+                elif chat.module_id == 'OPENMOXIE_ISPY':
+                    new_modules[f'{chat.module_id}/{content_id}'] = { 'xtor': ISpyChatSession, 'params': {} }
                 else:
                     new_modules[f'{chat.module_id}/{content_id}'] = { 'xtor': SinglePromptDBChatSession, 'params': { 'pk': chat.pk } }
                 logger.debug(f'Registering {chat.module_id}/{content_id}')
@@ -154,6 +158,12 @@ class RemoteChat:
         
     def on_chat_complete(self, device_id, id, session:ChatSession):
         logger.info(f'Chat Session Complete: {id} {session.has_complete_hook()}')
+        if id.startswith(('OPENMOXIE_VISION/', 'OPENMOXIE_ISPY/')):
+            from ..vision import set_device_vision
+            from ..models import MoxieDevice
+            device = MoxieDevice.objects.filter(device_id=device_id, vision_active=True).first()
+            if device:
+                set_device_vision(device, False, service=self._server)
         if session.has_complete_hook():
             # make a data-only Volley for the completion hook
             volley = Volley({}, device_id=device_id, data_only=True, robot_data=self._server.robot_data().get_volley_data(device_id), local_data=session.local_data)
@@ -196,8 +206,11 @@ class RemoteChat:
         return None
 
     # Markup text      
-    def make_markup(self, text, mood_and_intensity = None):
-        return automarkup_process(text, self._automarkup_rules, mood_and_intensity=mood_and_intensity)
+    def make_markup(self, text, mood_and_intensity = None, synth_rate = None):
+        return automarkup_process(
+            text, self._automarkup_rules,
+            mood_and_intensity=mood_and_intensity, synth_rate=synth_rate,
+        )
 
     # Get the next response to a chat
     def create_session_response(self, device_id, sess:ChatSession, volley: Volley):

@@ -1,0 +1,4 @@
+cryptography==46.0.3
+Pillow==11.3.0
+opencv-contrib-python-headless==4.12.0.88
+ultralytics==8.4.136

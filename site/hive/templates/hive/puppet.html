@@ -1,169 +1,231 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block content %}
-<div class="moxheader"><a href="{% url 'hive:dashboard' %}"><img class="moximage" src="{% static 'hive/openmoxie_logo.svg' %}"></a>OpenMoxie<span class="moxversion">{{moxie_version}}</span></div>
-<div class="p-3">
-<h2>Puppet Moxie</h2>
-<p>
-  When Puppet Mode is activated, Moxie will automatically wake into a mode where it only produces outputs from this page.
-  It will remain in this mode until you stop Puppet Mode.
-</p>
-<button id="puppet_button" type="button" class="btn btn-success">Start Puppet Mode</button>
-<table class="table">
-  <tr><th>Name</th><td>{{object.name}}</td></tr>
-  <tr><th>Device ID</th><td>{{object.device_id}}</td></tr>
-  <tr><th>Moxie State</th><td><span class="badge text-bg-success" id="moxie_state">Online</span></td></tr>
-  <tr><th>Puppet State</th><td><span class="badge text-bg-success" id="puppet_state">READY</span></td></tr>
-</table>
-<h3 class="chat-title">History</h3>
-<div id="chat_window" class="chat-window">
-  <ul id="chat_history" class="list-group">
-    <!-- Populated by AJAX -->
-  </ul>
+<div class="page-heading puppet-heading">
+  <div>
+    <div class="eyebrow">Live performance</div>
+    <h1>Enhanced Puppet Mode</h1>
+    <p>Type Moxie's exact words, then add expression, movement, and built-in sound effects. No AI generates or rewrites this speech.</p>
+  </div>
+  <button id="puppet_button" type="button" class="btn btn-success">Start Puppet Mode</button>
 </div>
-<div id="chat_input" class="chat-window">
-  <form id="chat_form">
-    <div class="mb-3">
-      Mood <select id="mood" name="mood">
-        <option value="neutral">Neutral</option>
-        <option value="happy">Happy</option>
-        <option value="positive">Positive</option>
-        <option value="angry">Angry</option>
-        <option value="sad">Sad</option>
-        <option value="negative">Negative</option>
-        <option value="shy">Shy</option>
-        <option value="afraid">Afraid</option>
-        <option value="concerned">Concerned</option>
-        <option value="confused">Confused</option>
-        <option value="curious">Curious</option>
-        <option value="embarrassed">Embarrassed</option>
-      </select>
-      Intensity<input type="range" min="0.0" max="1.0" step="0.1" id="intensity" name="intensity" value="0.5"></td>
-    </div>
-    <div class="mb-3">
-      <input id="user_input" name="user_input" class="form-control" placeholder="Say something..."></input>
-    </div>
-    <div class="mb-3">
-      <button title="Stop Moxie's current speech" id="interrupt_button" type="button" class="btn btn-secondary">Interrupt</button>
-    </div>
-  </form>
+
+<div id="puppet_notice" class="puppet-notice" role="status" aria-live="polite" hidden></div>
+
+<div class="puppet-status-grid">
+  <div class="metric"><div class="metric-label">Moxie</div><div class="metric-value"><span class="status-dot" id="moxie_dot"></span><span id="moxie_state">Checking…</span></div></div>
+  <div class="metric"><div class="metric-label">Puppet channel</div><div class="metric-value" id="puppet_state">Checking…</div></div>
+  <div class="metric"><div class="metric-label">Delivery</div><div class="metric-value" id="delivery_status">Natural · 100%</div></div>
+  <div class="metric"><div class="metric-label">Mode</div><div class="metric-value" id="mode_status">Inactive</div></div>
 </div>
+
+<div class="puppet-layout">
+  <section class="panel puppet-stage">
+    <div class="section-heading">
+      <div><h2>Direct text to speech</h2><p>Moxie says only the words entered here—there is no AI response.</p></div>
+      <span class="direct-chip">DIRECT TTS</span>
+    </div>
+    <form id="chat_form">
+      <label class="form-label" for="user_input">What should Moxie say?</label>
+      <textarea id="user_input" name="user_input" class="form-control puppet-text" rows="5" maxlength="1000" placeholder="Type the exact words you want Moxie to say…"></textarea>
+      <div class="composer-meta"><span><b id="character_count">0</b>/1000 characters</span><span>Ctrl + Enter to speak</span></div>
+
+      <h3 class="control-heading">Expression</h3>
+      <div class="mood-grid" role="group" aria-label="Expression">
+        {% for value, label, description in puppet_moods %}
+        <button type="button" class="mood-button{% if value == 'neutral' %} active{% endif %}" data-mood="{{value}}" title="{{description}}"><span>{{label}}</span><small>{{description}}</small></button>
+        {% endfor %}
+      </div>
+
+      <div class="performance-row">
+        <label>Expression level<select id="intensity" class="form-select"><option value="0.2">Subtle</option><option value="0.5" selected>Medium</option><option value="0.9">Strong</option></select></label>
+        <label>Vocal delivery<select id="vocal_style" class="form-select">{% for value, label, description in puppet_vocal_styles %}<option value="{{value}}">{{label}}</option>{% endfor %}</select></label>
+        <label>Per-line pace <output id="rate_output">100%</output><input id="speech_rate" type="range" min="70" max="130" step="5" value="100"></label>
+        <label>Opening sound<select id="sound" class="form-select"><option value="none">No sound</option>{% for group_key, group_label, sounds in puppet_sound_groups %}<optgroup label="{{group_label}}">{% for value, label, asset in sounds %}<option value="{{value}}">{{label}}</option>{% endfor %}</optgroup>{% endfor %}</select></label>
+        <label>Opening gesture<select id="gesture" class="form-select">{% for value, label, event in puppet_gestures %}<option value="{{value}}">{{label}}</option>{% endfor %}</select></label>
+      </div>
+      <p class="control-note">Expression level has three robot-supported steps and primarily changes facial/body expression. Vocal delivery and pace are the audible controls.</p>
+
+      <div class="puppet-actions">
+        <button type="submit" id="speak_button" class="btn btn-primary btn-lg">Speak exact text</button>
+        <button title="Immediately stop Moxie's current speech" id="interrupt_button" type="button" class="btn btn-outline-danger">Stop speaking</button>
+      </div>
+    </form>
+
+    <div class="quick-phrases">
+      <span>Quick text</span>
+      <button type="button" data-phrase="Hello! It is great to see you.">Hello</button>
+      <button type="button" data-phrase="That was amazing! Great job!">Great job</button>
+      <button type="button" data-phrase="Let me think about that for a moment.">Thinking</button>
+      <button type="button" data-phrase="Thank you for spending time with me.">Thank you</button>
+    </div>
+  </section>
+
+  <aside class="puppet-sidebar">
+    <section class="panel">
+      <h2 class="panel-title">Robot volume</h2>
+      <p class="control-help">Moxie's firmware exposes one installed voice identity. Volume is a persistent robot setting; delivery and pace are selected for each line above.</p>
+      <label class="range-label" for="volume">Robot volume <output id="volume_output">{% widthratio puppet_volume 1 100 %}%</output></label>
+      <input id="volume" type="range" min="0.1" max="1" step="0.1" value="{{puppet_volume}}">
+      <button id="apply_volume" type="button" class="btn btn-outline-primary w-100">Apply volume</button>
+    </section>
+
+    <section class="panel action-board-panel">
+      <h2 class="panel-title">Action board</h2>
+      <p class="control-help">Trigger a movement without generating an AI response or spoken line.</p>
+      <div class="board-tabs" data-board="actions" role="tablist" aria-label="Action categories">
+        {% for group_key, group_label, actions in puppet_action_groups %}<button type="button" data-page="actions-{{group_key}}"{% if forloop.first %} class="active"{% endif %}>{{group_label}}</button>{% endfor %}
+      </div>
+      {% for group_key, group_label, actions in puppet_action_groups %}
+      <div id="actions-{{group_key}}" class="action-board board-page"{% if not forloop.first %} hidden{% endif %}>
+        {% for value, label, description, kind, target, sound in actions %}
+        <button type="button" data-action="{{value}}"><strong>{{label}}</strong><small>{{description}}</small></button>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-title">Sound board</h2>
+      <p class="control-help">Play a safe sound already installed inside Moxie.</p>
+      <div class="board-tabs" data-board="sounds" role="tablist" aria-label="Sound categories">
+        {% for group_key, group_label, sounds in puppet_sound_groups %}<button type="button" data-page="sounds-{{group_key}}"{% if forloop.first %} class="active"{% endif %}>{{group_label}}</button>{% endfor %}
+      </div>
+      {% for group_key, group_label, sounds in puppet_sound_groups %}
+      <div id="sounds-{{group_key}}" class="sound-board board-page"{% if not forloop.first %} hidden{% endif %}>
+        {% for value, label, asset in sounds %}<button type="button" data-sound="{{value}}">{{label}}</button>{% endfor %}
+      </div>
+      {% endfor %}
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-title">Appearance presets</h2>
+      <p class="control-help">Changes only Moxie's safer eye and face-color layers. Hair, glasses, and other choices remain unchanged.</p>
+      <div class="face-presets">
+        {% for value, label, description, assets in puppet_face_presets %}
+        <button type="button" data-face="{{value}}"><span class="face-swatch face-{{value}}"></span><span><strong>{{label}}</strong><small>{{description}}</small></span></button>
+        {% endfor %}
+      </div>
+      <a class="advanced-face-link" href="{% url 'hive:face' object.pk %}">Open advanced Face Editor</a>
+    </section>
+  </aside>
 </div>
+
+<section class="panel puppet-history-panel">
+  <div class="section-heading"><div><h2>Performance history</h2><p>This temporary list stays only until this page is refreshed.</p></div><button id="clear_history" class="btn btn-sm btn-outline-secondary" type="button">Clear</button></div>
+  <ol id="chat_history" class="puppet-history"><li class="empty-history">Nothing sent yet.</li></ol>
+</section>
+
 <script>
-  function add_to_history(cname, badge, prefix, text) {
-    $("#chat_history").append("<li class='" + cname + "'><span class='badge rounded-pill " + badge + "'>" + prefix + "</span>&nbsp;" + text + "</li>");
-    $('#chat_window').scrollTop($('#chat_window')[0].scrollHeight);
+(function() {
+  const apiUrl = "{% url 'hive:puppet_api' object.pk %}";
+  let selectedMood = 'neutral';
+
+  function showNotice(message, isError) {
+    const notice = $('#puppet_notice');
+    notice.text(message).toggleClass('error', !!isError).prop('hidden', false);
+    window.clearTimeout(showNotice.timer);
+    showNotice.timer = window.setTimeout(function() { notice.prop('hidden', true); }, 4500);
   }
 
-  function set_puppet_state(val) {
-    $.ajax({
-        type: 'POST',
-        url: "{% url 'hive:puppet_api' object.pk %}", 
-        data: {'command': val ? "enable" : "disable" },
-        dataType: 'json'
-    }).always(function() {
-      window.setTimeout("refresh_view()", 1);
+  function post(data, onSuccess) {
+    return $.ajax({type: 'POST', url: apiUrl, data: data, dataType: 'json'})
+      .done(function(result) { if (onSuccess) onSuccess(result); })
+      .fail(function(xhr) { showNotice(xhr.responseText || 'Moxie did not accept that command.', true); });
+  }
+
+  function addHistory(label, text) {
+    $('#chat_history .empty-history').remove();
+    const item = $('<li>');
+    $('<span>').addClass('history-time').text(new Date().toLocaleTimeString()).appendTo(item);
+    $('<strong>').text(label).appendTo(item);
+    $('<p>').text(text || 'Sound cue only').appendTo(item);
+    $('#chat_history').prepend(item);
+  }
+
+  function setPuppetState(enabled) {
+    post({command: enabled ? 'enable' : 'disable'}, function() {
+      showNotice(enabled ? 'Puppet Mode is starting.' : 'Puppet Mode stopped.');
+      refreshView();
     });
   }
 
-  function puppet_speak(speech, mood, intensity) {
-    $.ajax({
-        type: 'POST',
-        url: "{% url 'hive:puppet_api' object.pk %}", 
-        data: {
-          'command': "speak",
-          'speech': speech,
-          'mood': mood,
-          'intensity': intensity
-        },
-        dataType: 'json'
-      })
-      .done(function(data, textStatus, jqXHR) {
-        add_to_history('list-group-item list-group-item-primary chat-line', 'bg-primary', 'Moxie (' + mood + ')', speech)
-      })
-      .fail(function(jqXHR, textStatus, errorThrown) {
-        console.log("Failed speech: " + errorThrown);
-      })
-      .always(function() {
-        $('#user_input').val('');
-      });
-  }
-
-  function puppet_interrupt() {
-    console.log("Interrupting Moxie");
-    $.ajax({
-        type: 'POST',
-        url: "{% url 'hive:puppet_api' object.pk %}", 
-        data: { 'command': "interrupt" },
-        dataType: 'json'
-      })
-      .done(function(data, textStatus, jqXHR) {
-        add_to_history('list-group-item list-group-item-primary chat-line', 'bg-primary', 'System', '--Interrupt--')
-      })
-      .fail(function(jqXHR, textStatus, errorThrown) {
-        console.log("Failed interrupt: " + errorThrown);
-      })
-  }
-
-  function refresh_view() {
-    $.ajax({
-        type: 'GET',
-        url: "{% url 'hive:puppet_api' object.pk %}",
-        dataType: "json"
-    }).done(function(data, textStatus, jqXHR) {
-        console.log(data);
-        if (data["online"]) {
-          $("#moxie_state")
-            .removeClass("text-bg-danger")
-            .addClass("text-bg-success")
-            .text("Online");
-        } else {
-          $("#moxie_state")
-            .removeClass("text-bg-success")
-            .addClass("text-bg-danger")
-            .text("Offline");
-        }
-
-        if (data["puppet_state"] != null) {
-          $("#puppet_state")
-            .removeClass("text-bg-warning")
-            .addClass("text-bg-success")
-            .text(data["puppet_state"]);
-        } else {
-          $("#puppet_state")
-            .removeClass("text-bg-success")
-            .addClass("text-bg-warning")
-            .text("PENDING");
-        }
-
-        if (data["puppet_enabled"]) {
-          $("#puppet_button")
-            .removeClass("btn-success")
-            .addClass("btn-danger")
-            .text("Stop Puppet Mode")
-            .off("click").on("click", function() { set_puppet_state(false); });
-        } else {
-          $("#puppet_button")
-            .removeClass("btn-danger")
-            .addClass("btn-success")
-            .text("Start Puppet Mode")
-            .off("click").on("click", function() { set_puppet_state(true); });
-        }
-    }).always(function() {
-      window.setTimeout("refresh_view()", 2000);
+  function speak(speech, soundOverride) {
+    const sound = soundOverride || $('#sound').val();
+    post({
+      command: 'speak', speech: speech, mood: selectedMood,
+      intensity: $('#intensity').val(), sound: sound, gesture: $('#gesture').val(),
+      rate: Number($('#speech_rate').val()) / 100, vocal_style: $('#vocal_style').val()
+    }, function() {
+      addHistory('Moxie · ' + selectedMood + (sound !== 'none' ? ' · ' + sound : ''), speech);
+      if (speech) { $('#user_input').val('').trigger('input').focus(); }
     });
   }
 
-  $(document).ready(function() {
-    $('#chat_form').submit(function(e) {
-      e.preventDefault(); // Prevent form submission
-      puppet_speak($('#user_input').val(), $('#mood').val(), $('#intensity').val());
-      });
+  function refreshView() {
+    $.getJSON(apiUrl).done(function(data) {
+      $('#moxie_state').text(data.online ? 'Online' : 'Offline');
+      $('#moxie_dot').toggleClass('online', data.online).toggleClass('offline', !data.online);
+      $('#puppet_state').text(data.puppet_state || 'Pending');
+      $('#mode_status').text(data.puppet_enabled ? 'Puppet active' : 'Inactive');
+      $('#puppet_button').toggleClass('btn-success', !data.puppet_enabled).toggleClass('btn-danger', data.puppet_enabled)
+        .text(data.puppet_enabled ? 'Stop Puppet Mode' : 'Start Puppet Mode')
+        .off('click').on('click', function() { setPuppetState(!data.puppet_enabled); });
+    }).always(function() { window.setTimeout(refreshView, 2500); });
+  }
 
-    $("#interrupt_button").on("click", function() { puppet_interrupt(); });
-
-    refresh_view();
+  $('.mood-button').on('click', function() {
+    selectedMood = $(this).data('mood');
+    $('.mood-button').removeClass('active');
+    $(this).addClass('active');
   });
+  $('#speech_rate').on('input', function() { $('#rate_output').text(this.value + '%'); updateDelivery(); });
+  $('#vocal_style').on('change', updateDelivery);
+  $('#volume').on('input', function() { $('#volume_output').text(Math.round(this.value * 100) + '%'); });
+  $('#user_input').on('input', function() { $('#character_count').text(this.value.length); });
+  $('#user_input').on('keydown', function(event) { if (event.ctrlKey && event.key === 'Enter') $('#chat_form').trigger('submit'); });
 
+  $('#chat_form').on('submit', function(event) {
+    event.preventDefault();
+    speak($('#user_input').val().trim());
+  });
+  $('#interrupt_button').on('click', function() { post({command: 'interrupt'}, function() { addHistory('System', 'Stopped current speech'); }); });
+  function updateDelivery() {
+    const label = $('#vocal_style option:selected').text();
+    $('#delivery_status').text(label + ' · ' + $('#speech_rate').val() + '%');
+  }
+  $('#apply_volume').on('click', function() {
+    post({command: 'settings', volume: $('#volume').val()}, function() {
+      showNotice('Volume sent to Moxie.');
+    });
+  });
+  $('.action-board button').on('click', function() {
+    const button = $(this);
+    post({command: 'action', action: button.data('action')}, function() {
+      addHistory('Action', button.find('strong').text());
+    });
+  });
+  $('.sound-board button').on('click', function() { speak('', $(this).data('sound')); });
+  $('.board-tabs button').on('click', function() {
+    const button = $(this);
+    const tabs = button.closest('.board-tabs');
+    const prefix = tabs.data('board') + '-';
+    tabs.find('button').removeClass('active').attr('aria-selected', 'false');
+    button.addClass('active').attr('aria-selected', 'true');
+    $('[id^="' + prefix + '"]').prop('hidden', true);
+    $('#' + button.data('page')).prop('hidden', false);
+  });
+  $('.face-presets button').on('click', function() {
+    const button = $(this);
+    post({command: 'face', preset: button.data('face')}, function() {
+      $('.face-presets button').removeClass('active'); button.addClass('active');
+      showNotice(button.find('strong').text() + ' appearance sent to Moxie.');
+    });
+  });
+  $('.quick-phrases button').on('click', function() { $('#user_input').val($(this).data('phrase')).trigger('input').focus(); });
+  $('#clear_history').on('click', function() { $('#chat_history').html('<li class="empty-history">Nothing sent yet.</li>'); });
+
+  refreshView();
+})();
 </script>
 {% endblock %}

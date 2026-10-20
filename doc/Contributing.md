@@ -11,6 +11,7 @@ This family edition is a fork of [jbeghtol/openmoxie](https://github.com/jbeghto
 - `site/data`: default content imported into the database.
 - `content_modules`: optional portable content packages.
 - `doc`: protocol and operating documentation.
+- `vision_service`: optional local HTTPS receiver, object detector, and consent-based face store.
 
 ## Development loop
 
@@ -30,6 +31,7 @@ Do not commit `local/work`, logs, API keys, passwords, device identifiers, or co
 - Separate “message published” from “robot confirmed.”
 - Prefer deterministic, API-free implementations for simple games.
 - Never silently collect camera, face, or identity data.
+- Preserve the Vision enable/disable backup invariant, latest-frame default, conservative identity threshold, and event-bounded arming. Never add a camera heartbeat.
 - Make parent controls legible without exposing raw protocol concepts.
 - Preserve advanced diagnostics, but redact secrets and place them behind a clear technical disclosure.
 - Treat robot firmware as fallible: handle disconnects, duplicate notifications, stale state, and unsupported assets.

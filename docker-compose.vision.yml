@@ -1,0 +1,36 @@
+# Optional OpenMoxie vision extension. Install with setup-vision.bat or:
+#   docker compose -f docker-compose.yml -f docker-compose.vision.yml up -d --build
+services:
+  server:
+    environment:
+      OPENMOXIE_VISION_URL: http://vision:8080
+      OPENMOXIE_VISION_CONTAINER: openmoxie-vision
+      OPENMOXIE_DOCKER_CONTROL: "1"
+    volumes:
+      # Opt-in Docker UI control. This grants the server access to Docker's API;
+      # the application restricts controls to the named vision container.
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  vision:
+    container_name: openmoxie-vision
+    build:
+      context: ./vision_service
+    restart: unless-stopped
+    ports:
+      - "443:443"
+    volumes:
+      - ./local/work/vision:/data
+      - openmoxie-vision-models:/models
+    environment:
+      VISION_MODEL: ${OPENMOXIE_VISION_MODEL:-yolo11n.pt}
+      VISION_CONFIDENCE: ${OPENMOXIE_VISION_CONFIDENCE:-0.35}
+      VISION_ARCHIVE_FRAMES: ${OPENMOXIE_VISION_ARCHIVE_FRAMES:-0}
+      VISION_FACE_RECOGNITION: ${OPENMOXIE_VISION_FACE_RECOGNITION:-1}
+    networks:
+      default:
+        aliases:
+          - production-ic-worker.embodied.com
+          - staging-ic-worker.embodied.com
+
+volumes:
+  openmoxie-vision-models:

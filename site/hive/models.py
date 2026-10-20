@@ -79,6 +79,13 @@ class MoxieDevice(models.Model):
     reasoning_effort = models.CharField(max_length=20, default='high')
     reasoning_interludes = models.CharField(max_length=20, default='mixed')
     disabled_module_ids = models.JSONField(default=default_disabled_modules, blank=True)
+    # Vision is deliberately opt-in twice: the extension must be enabled for the
+    # Hive, and a parent must start a vision activity for this robot.  active is
+    # persisted so a short MQTT reconnect can restore an interrupted activity;
+    # every ordinary activity and Sleep explicitly turns it back off.
+    vision_active = models.BooleanField(default=False)
+    vision_mode = models.CharField(max_length=20, blank=True, default='')
+    vision_config_backup = models.JSONField(default=dict, blank=True)
 
     def is_paired(self):
         if self.robot_config:
@@ -109,6 +116,7 @@ class HiveConfiguration(models.Model):
     chat_api_key = models.TextField(blank=True, default='')
     stt_provider = models.CharField(max_length=20, default='openai')
     local_stt_model = models.CharField(max_length=100, default='small.en')
+    vision_extension_enabled = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name

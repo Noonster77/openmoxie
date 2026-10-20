@@ -14,7 +14,9 @@ from .models import ConversationEvent, GlobalResponse, HiveConfiguration, Joke, 
 from .mqtt.moxie_server import MoxieServer
 from .mqtt.moxie_remote_chat import RemoteChat
 from .mqtt.robot_data import DEFAULT_ROBOT_CONFIG, RobotData
-from .mqtt.conversations import ChatSession, HomeworkChatSession, JokeChatSession, ReasoningChatSession, SingleContextChatSession, SinglePromptDBChatSession, TriviaChatSession
+from .mqtt.conversations import ChatSession, HomeworkChatSession, ISpyChatSession, JokeChatSession, ReasoningChatSession, SingleContextChatSession, SinglePromptDBChatSession, TriviaChatSession, VisionChatSession
+from .mqtt.vision_protocol import POWER_RUNNING, parse_power_state, vision_gate_payloads
+from .vision import set_device_vision
 from .mqtt.volley import Volley
 from .mqtt.conversation_log import record_conversation, safety_redirect
 from .mqtt.global_responses import GlobalResponses
@@ -60,6 +62,15 @@ class MQTTServiceTests(SimpleTestCase):
 
         server.on_device_state.assert_called_once_with("d_abc123", message)
         self.assertEqual(server._status["last_device_id"], "d_abc123")
+
+    def test_vision_gate_wire_format_has_no_new_protobuf_runtime_dependency(self):
+        enabled = vision_gate_payloads(1, True)
+        disabled = vision_gate_payloads(1, False)
+
+        self.assertEqual(enabled[0], b'embodied.logging.LoggingStateUpdate:\x08\x02\x20\x01\x38\x02')
+        self.assertEqual(enabled[1], b'embodied.robotbrain.EnableICModule:\x08\x01\x10\x01')
+        self.assertEqual(disabled[0], b'embodied.logging.LoggingStateUpdate:\x08\x01\x20\x01\x38\x01')
+        self.assertEqual(disabled[1], b'embodied.robotbrain.EnableICModule:\x08\x01')
 
     def test_background_errors_are_exposed_in_service_status(self):
         server = MoxieServer.__new__(MoxieServer)
@@ -1087,19 +1098,24 @@ class ParentSafetyAndVoiceTests(TestCase):
             self.assertNotIn('Remove me', transcript)
 
     @patch('hive.views.get_instance')
-    def test_voice_controls_are_saved_to_robot_settings(self, get_instance):
+    def test_undocumented_voice_controls_are_removed_from_robot_settings(self, get_instance):
+        self.device.robot_settings = {'props': {
+            'touch_wake': '1', 'cloud_tts_voice_id': 'Ivy',
+            'cloud_tts_speech_rate': '92',
+        }}
+        self.device.save(update_fields=['robot_settings'])
         schedule = MoxieSchedule.objects.create(name='voice', schedule={'provided_schedule': []})
         response = self.client.post(reverse('hive:moxie_edit', args=[self.device.pk]), {
             'moxie_name': 'Family Moxie', 'nickname': 'Avery', 'speaker_names': 'Avery',
             'conversation_profile': 'Friendly', 'schedule': schedule.pk, 'screen_brightness': '1',
-            'audio_volume': '.6', 'pairing_status': 'paired', 'tts_voice': 'Ivy',
-            'tts_speech_rate': '92',
+            'audio_volume': '.6', 'pairing_status': 'paired',
         })
         self.device.refresh_from_db()
 
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(self.device.robot_settings['props']['cloud_tts_voice_id'], 'Ivy')
-        self.assertEqual(self.device.robot_settings['props']['cloud_tts_speech_rate'], '92')
+        self.assertEqual(self.device.robot_settings['props']['touch_wake'], '1')
+        self.assertNotIn('cloud_tts_voice_id', self.device.robot_settings['props'])
+        self.assertNotIn('cloud_tts_speech_rate', self.device.robot_settings['props'])
 
     @patch('hive.views.get_instance')
     def test_parent_corner_pages_render(self, get_instance):
@@ -1141,3 +1157,337 @@ class ParentSafetyAndVoiceTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'save-toast')
         self.assertContains(response, 'Trivia mix saved and ready for the next game.')
+
+
+class EnhancedPuppetModeTests(TestCase):
+    def setUp(self):
+        self.device = MoxieDevice.objects.create(
+            device_id='d_puppet', name='Puppet Moxie',
+            robot_config={
+                'audio_volume': .6,
+                'child_pii': {
+                    'nickname': 'Avery',
+                    'face_options': ['MX_080_Head_Hair_BlackBob', 'MX_010_Eyes_Brown'],
+                },
+            },
+            robot_settings={'props': {
+                'cloud_tts_voice_id': 'Ivy', 'cloud_tts_speech_rate': '94',
+            }},
+        )
+
+    def test_puppet_page_explains_direct_non_ai_text_to_speech(self):
+        response = self.client.get(reverse('hive:puppet', args=[self.device.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Direct text to speech')
+        self.assertContains(response, 'there is no AI response')
+        self.assertContains(response, 'Speak exact text')
+        self.assertContains(response, 'Appearance presets')
+        self.assertContains(response, 'Action board')
+        self.assertContains(response, 'Per-line pace')
+        self.assertContains(response, 'Action categories')
+        self.assertContains(response, 'Breathing')
+        self.assertContains(response, 'Sound categories')
+        self.assertContains(response, 'Animals')
+        self.assertContains(response, 'Drumroll')
+
+    @patch('hive.views.get_instance')
+    def test_direct_speech_is_sent_verbatim_with_curated_performance_controls(self, get_instance):
+        service = get_instance.return_value
+
+        response = self.client.post(reverse('hive:puppet_api', args=[self.device.pk]), {
+            'command': 'speak', 'speech': 'These are my exact words.',
+            'mood': 'curious', 'intensity': '.7', 'sound': 'sparkles',
+            'gesture': 'question', 'rate': '.8', 'vocal_style': 'motivational',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        service.send_telehealth_speech.assert_called_once_with(
+            'd_puppet', 'These are my exact words.', 'curious', .7,
+            sound='sparkles', gesture='question', rate=.8, vocal_style='motivational',
+        )
+
+    @patch('hive.views.get_instance')
+    def test_arbitrary_markup_controls_are_rejected(self, get_instance):
+        response = self.client.post(reverse('hive:puppet_api', args=[self.device.pk]), {
+            'command': 'speak', 'speech': 'Hello', 'mood': 'neutral',
+            'intensity': '.5', 'sound': '<unsafe>', 'gesture': 'auto',
+        })
+
+        self.assertEqual(response.status_code, 400)
+        get_instance.return_value.send_telehealth_speech.assert_not_called()
+
+    @patch('hive.views.get_instance')
+    def test_volume_is_saved_and_ignored_voice_properties_are_removed(self, get_instance):
+        response = self.client.post(reverse('hive:puppet_api', args=[self.device.pk]), {
+            'command': 'settings', 'volume': '.7',
+        })
+        self.device.refresh_from_db()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('cloud_tts_voice_id', self.device.robot_settings['props'])
+        self.assertNotIn('cloud_tts_speech_rate', self.device.robot_settings['props'])
+        self.assertEqual(self.device.robot_config['audio_volume'], .7)
+        get_instance.return_value.handle_config_updated.assert_called_once()
+
+    @patch('hive.views.get_instance')
+    def test_face_preset_changes_only_safe_layers(self, get_instance):
+        response = self.client.post(reverse('hive:puppet_api', args=[self.device.pk]), {
+            'command': 'face', 'preset': 'ocean',
+        })
+        self.device.refresh_from_db()
+        options = self.device.robot_config['child_pii']['face_options']
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('MX_080_Head_Hair_BlackBob', options)
+        self.assertNotIn('MX_010_Eyes_Brown', options)
+        self.assertIn('MX_010_Eyes_LightBlue', options)
+        self.assertIn('MX_020_Face_Colors_Teal', options)
+        self.assertEqual(self.device.robot_config['child_pii']['nickname'], 'Avery')
+
+    def test_server_combines_automatic_markup_with_safe_sound_and_gesture(self):
+        server = MoxieServer.__new__(MoxieServer)
+        server._remote_chat = MagicMock()
+        server._remote_chat.make_markup.return_value = '<mark name="mood"/>Hello'
+        server.send_telehealth = MagicMock()
+
+        server.send_telehealth_speech(
+            'd_puppet', 'Hello', 'happy', .8, sound='success', gesture='celebrate',
+            rate=.75, vocal_style='excited',
+        )
+
+        message = server.send_telehealth.call_args.args[1]
+        self.assertEqual(message['output']['text'], 'Hello')
+        self.assertIn('sfx_successful_command_1', message['output']['markup'])
+        self.assertIn('Gesture_Celebrate', message['output']['markup'])
+        self.assertIn('<usel genre="excited"', message['output']['markup'])
+        self.assertIn('<mark name="mood"/>Hello', message['output']['markup'])
+        server._remote_chat.make_markup.assert_called_once_with(
+            'Hello', ('happy', .8), synth_rate=.75,
+        )
+
+    def test_per_line_synthesis_rate_is_written_into_moxie_markup(self):
+        remote = RemoteChat(MagicMock())
+
+        slow = remote.make_markup('This line should be clearly slower.', ('neutral', .5), synth_rate=.7)
+        fast = remote.make_markup('This line should be clearly faster.', ('neutral', .5), synth_rate=1.3)
+
+        self.assertIn('<sig rate="0.7">', slow)
+        self.assertIn('<sig rate="1.3">', fast)
+
+    @patch('hive.views.get_instance')
+    def test_action_board_sends_only_curated_movement(self, get_instance):
+        response = self.client.post(reverse('hive:puppet_api', args=[self.device.pk]), {
+            'command': 'action', 'action': 'wave',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        get_instance.return_value.send_telehealth_action.assert_called_once_with('d_puppet', 'wave')
+
+        rejected = self.client.post(reverse('hive:puppet_api', args=[self.device.pk]), {
+            'command': 'action', 'action': 'bht_untrusted',
+        })
+        self.assertEqual(rejected.status_code, 400)
+
+    @patch('hive.views.get_instance')
+    def test_expanded_action_and_sound_pages_use_the_curated_api(self, get_instance):
+        action = self.client.post(reverse('hive:puppet_api', args=[self.device.pk]), {
+            'command': 'action', 'action': 'dragon_breath',
+        })
+        sound = self.client.post(reverse('hive:puppet_api', args=[self.device.pk]), {
+            'command': 'speak', 'speech': '', 'mood': 'neutral', 'intensity': '.5',
+            'sound': 'drumroll', 'gesture': 'auto', 'rate': '1',
+            'vocal_style': 'natural',
+        })
+
+        self.assertEqual(action.status_code, 200)
+        self.assertEqual(sound.status_code, 200)
+        get_instance.return_value.send_telehealth_action.assert_called_once_with(
+            'd_puppet', 'dragon_breath',
+        )
+        get_instance.return_value.send_telehealth_speech.assert_called_once_with(
+            'd_puppet', '', 'neutral', .5, sound='drumroll', gesture='auto',
+            rate=1.0, vocal_style='natural',
+        )
+
+
+class OptionalVisionTests(TestCase):
+    def setUp(self):
+        self.config, _ = HiveConfiguration.objects.get_or_create(name='default')
+        self.config.vision_extension_enabled = True
+        self.config.save(update_fields=['vision_extension_enabled'])
+        self.device = MoxieDevice.objects.create(
+            device_id='d_vision', name='Vision Moxie', speaker_names=['Avery'],
+            robot_config={'audio_volume': '.6'},
+            robot_settings={'props': {'touch_wake': '1', 'gcp_upload_disable': '1'}},
+        )
+
+    def test_enable_and_disable_restore_exact_previous_camera_config(self):
+        service = MagicMock()
+
+        set_device_vision(self.device, True, mode='vision', service=service)
+        self.device.refresh_from_db()
+        self.assertTrue(self.device.vision_active)
+        self.assertEqual(self.device.robot_config['data_sharing'], 'full')
+        self.assertEqual(self.device.robot_settings['props']['image_captioning'], '1')
+        self.assertEqual(self.device.robot_settings['props']['gcp_upload_disable'], '0')
+
+        set_device_vision(self.device, False, service=service)
+        self.device.refresh_from_db()
+        self.assertFalse(self.device.vision_active)
+        self.assertNotIn('data_sharing', self.device.robot_config)
+        self.assertNotIn('image_captioning', self.device.robot_settings['props'])
+        self.assertEqual(self.device.robot_settings['props']['gcp_upload_disable'], '1')
+        self.assertEqual(self.device.robot_settings['props']['touch_wake'], '1')
+        service.set_vision_gate.assert_called_with(self.device.device_id, False)
+
+    def test_enabling_a_second_robot_closes_the_first_camera(self):
+        other = MoxieDevice.objects.create(device_id='d_other', name='Other Moxie')
+        service = MagicMock()
+        set_device_vision(self.device, True, service=service)
+
+        set_device_vision(other, True, service=service)
+        self.device.refresh_from_db()
+        other.refresh_from_db()
+
+        self.assertFalse(self.device.vision_active)
+        self.assertTrue(other.vision_active)
+        service.set_vision_gate.assert_any_call(self.device.device_id, False)
+
+    def test_power_state_wake_stages_one_event_driven_rearm(self):
+        self.device.vision_active = True
+        self.device.save(update_fields=['vision_active'])
+        server = MoxieServer.__new__(MoxieServer)
+        server._vision_extension_enabled = True
+        server._vision_power_state = {}
+        server._vision_armed_devices = {self.device.device_id}
+        server.set_vision_gate = MagicMock()
+
+        suspend = b'embodied.power.PowerStatePB:\x08\x01\x10\x05'
+        running = b'embodied.power.PowerStatePB:\x08\x02\x10\x03'
+        self.assertEqual(parse_power_state(suspend), 5)
+        server._handle_vision_power_event(self.device.device_id, 'zmq', SimpleNamespace(payload=suspend))
+        server._handle_vision_power_event(self.device.device_id, 'zmq', SimpleNamespace(payload=running))
+
+        server.set_vision_gate.assert_called_once_with(self.device.device_id, True, latch=False)
+        self.assertNotIn(self.device.device_id, server._vision_armed_devices)
+        self.assertEqual(server._vision_power_state[self.device.device_id], POWER_RUNNING)
+
+    @patch('hive.vision.latest_observation', return_value={'age_seconds': 999})
+    @patch('hive.mqtt.moxie_server.time.monotonic', side_effect=[0, 301, 1000])
+    def test_stale_camera_recovery_is_hard_bounded_to_two_arms(self, _clock, _latest):
+        self.device.vision_active = True
+        self.device.save(update_fields=['vision_active'])
+        server = MoxieServer.__new__(MoxieServer)
+        server._vision_extension_enabled = True
+        server._vision_power_state = {self.device.device_id: POWER_RUNNING}
+        server._vision_stale_episodes = {}
+        server._robot_data = MagicMock()
+        server._robot_data.device_online.return_value = True
+        server.set_vision_gate = MagicMock()
+
+        server._vision_stale_tick()
+        server._vision_stale_tick()
+        server._vision_stale_tick()
+
+        self.assertEqual(server.set_vision_gate.call_count, 2)
+
+    @patch('hive.mqtt.conversations.latest_observation')
+    def test_vision_mode_answers_from_fresh_local_detections(self, latest):
+        latest.return_value = {
+            'fresh': True, 'objects': [
+                {'label': 'cup', 'confidence': .9},
+                {'label': 'chair', 'confidence': .8},
+            ], 'faces': [],
+        }
+        session = VisionChatSession()
+        volley = Volley.request_from_speech(
+            'What do you see?', device_id=self.device.device_id,
+            module_id='OPENMOXIE_VISION', content_id='default',
+        )
+
+        session.handle_volley(volley)
+
+        self.assertIn('cup', volley.response['output']['text'])
+        self.assertIn('chair', volley.response['output']['text'])
+
+    @patch('hive.mqtt.conversations.random.choice', side_effect=lambda values: values[0])
+    @patch('hive.mqtt.conversations.latest_observation')
+    def test_i_spy_selects_a_non_person_object_and_accepts_the_guess(self, latest, _choice):
+        latest.return_value = {
+            'fresh': True, 'objects': [
+                {'label': 'person', 'confidence': .99},
+                {'label': 'book', 'confidence': .85, 'color': 'blue', 'position': 'left'},
+            ], 'faces': [],
+        }
+        session = ISpyChatSession()
+        opener = Volley.request_from_speech('', device_id=self.device.device_id)
+        session.handle_volley(opener)
+        guess = Volley.request_from_speech('Is it a book?', device_id=self.device.device_id)
+
+        session.handle_volley(guess)
+
+        self.assertEqual(session.local_data['secret'], None)
+        self.assertIn('You found it', guess.response['output']['text'])
+
+    @patch('hive.views.vision_service_status', return_value={'reachable': False})
+    @patch('hive.views.get_instance')
+    def test_dashboard_keeps_only_per_robot_vision_actions(self, get_instance, _status):
+        get_instance.return_value.robot_data.return_value.connected_list.return_value = []
+        get_instance.return_value.service_status.return_value = {'broker_connected': True}
+
+        response = self.client.get(reverse('hive:dashboard'))
+
+        self.assertNotContains(response, 'Local vision control')
+        self.assertContains(response, 'value="vision"')
+
+    @patch('hive.views.docker_container_status', return_value={'available': False, 'state': 'unavailable'})
+    def test_setup_contains_maintenance_and_explicit_vision_controls(self, _container):
+        response = self.client.get(reverse('hive:setup'))
+
+        self.assertContains(response, 'Content and maintenance')
+        self.assertContains(response, 'Reload database content')
+        self.assertContains(response, 'Local vision control')
+        self.assertContains(response, 'Turn Vision features off')
+        self.assertContains(response, f'{SinglePromptChat.objects.count()} conversations')
+
+    @patch('hive.views.docker_container_status', return_value={'available': True, 'state': 'running', 'running': True})
+    @patch('hive.views.latest_observation', return_value={
+        'captured_at': None, 'fresh': False, 'objects': [], 'faces': [],
+    })
+    @patch('hive.views.vision_service_status', return_value={
+        'reachable': True, 'model_loaded': True, 'frames_received': 0,
+    })
+    def test_admin_has_live_vision_diagnostics(self, _service, _latest, _container):
+        from django.contrib.auth import get_user_model
+        admin = get_user_model().objects.create_superuser('vision-admin', '', 'test-password')
+        self.client.force_login(admin)
+        self.device.vision_active = True
+        self.device.vision_mode = 'vision'
+        self.device.save(update_fields=['vision_active', 'vision_mode'])
+
+        page = self.client.get(reverse('vision_admin'))
+        status = self.client.get(reverse('vision_admin_status'))
+
+        self.assertContains(page, 'What Moxie sees')
+        self.assertContains(page, 'Identification attempts')
+        self.assertTrue(status.json()['no_frame_diagnostic'])
+        self.assertEqual(status.json()['expected_caption_ip'], self.config.external_host)
+
+    @patch('hive.views.get_instance')
+    def test_setup_vision_off_closes_active_camera(self, get_instance):
+        self.device.vision_active = True
+        self.device.vision_config_backup = {}
+        self.device.save(update_fields=['vision_active', 'vision_config_backup'])
+        service = get_instance.return_value
+
+        response = self.client.post(
+            reverse('hive:vision_extension_control'), {'action': 'disable'},
+        )
+        self.config.refresh_from_db()
+        self.device.refresh_from_db()
+
+        self.assertRedirects(response, reverse('hive:setup'))
+        self.assertFalse(self.config.vision_extension_enabled)
+        self.assertFalse(self.device.vision_active)
+        service.set_vision_gate.assert_called_with(self.device.device_id, False)

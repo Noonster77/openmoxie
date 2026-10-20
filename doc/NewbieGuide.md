@@ -63,7 +63,7 @@ If this computer has less than 16 GB of RAM, the recommended local model may be 
 4. Return to the `openmoxie-main` folder and double-click [`setup-lm-studio-model.bat`](../setup-lm-studio-model.bat).
 5. If Windows Firewall asks for permission, allow access on **Private networks** only.
 
-The helper downloads the recommended [Qwen3.5 9B Q4_K_S model](https://huggingface.co/Manojb/Qwen3.5-9B-Q4_K_S.gguf), which is about 6.5 GB. It then loads the model, starts LM Studio's local server on port `1234`, and opens OpenMoxie Setup.
+The helper downloads the recommended [Qwen3.5 9B Q4_K_S model](https://huggingface.co/Manojb/Qwen3.5-9B-Q4_K_S.gguf), which is about 6.5 GB. It then loads the model, starts the LM Studio background daemon, restarts the API listener on `0.0.0.0:1234`, verifies the HTTP API, verifies access from Docker when OpenMoxie is running, and opens OpenMoxie Setup.
 
 When it finishes, the command window should show these values:
 
@@ -124,6 +124,8 @@ Select **Save configuration**, then use **Test saved AI**. A successful test sho
 3. Use Moxie's supported migration flow and show the QR code to the robot.
 4. Wait for the robot card in the Control Center to say **Online**.
 
+If Moxie remains on the OpenMoxie QR screen, run `setup-openmoxie-network.bat`, approve the administrator prompt, show the Wi-Fi QR again, and then show the Migration QR. The helper allows only local-subnet access to MQTT port 8883 and optional Vision port 443.
+
 A Wi-Fi check mark only confirms that Moxie joined Wi-Fi. The **MQTT** and **Online** indicators in OpenMoxie confirm that the robot reached this computer.
 
 ## 7. Try it
@@ -136,6 +138,19 @@ Start with a few quick checks:
 4. Open **Live monitor** to watch commands and conversation events.
 
 Reasoning mode may take a few minutes with a local model. Moxie will use facts or jokes while the answer is being prepared.
+
+## 8. Optional: install local Vision
+
+Get ordinary Chat and Trivia working first. Then:
+
+1. Double-click [`setup-vision.bat`](../setup-vision.bat).
+2. Allow the detector image and model to download. This optional container is much larger than the basic OpenMoxie services.
+3. Copy the two hostname-to-IP DNS overrides printed by the script into the router, Pi-hole, AdGuard Home, or another DNS service used by Moxie.
+4. Return to the Control Center and confirm **Local vision: Ready**.
+5. Choose **Vision** and ask “What do you see?”
+6. Choose **I Spy** and ask yes/no questions about the object Moxie selected.
+
+Face recognition is optional even after Vision is installed. Read [Vision privacy and enrollment](Vision.md#local-data-and-face-recognition) and get consent before saving face samples.
 
 ## Cloud AI options
 

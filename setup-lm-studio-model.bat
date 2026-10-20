@@ -56,18 +56,39 @@ if errorlevel 1 (
     exit /b 1
 )
 
-"%LMS%" server status --quiet >nul 2>nul
-if errorlevel 1 (
-    echo Starting the LM Studio API server on port 1234...
-    echo This binds to your local network so Docker can connect. Keep Windows Firewall set to Private networks only.
-    "%LMS%" server start --port 1234 --bind 0.0.0.0
-) else (
-    echo The LM Studio API server is already running.
-)
+echo Ensuring the LM Studio background daemon is running...
+"%LMS%" daemon up >nul 2>nul
+
+rem A running listener may still be bound only to 127.0.0.1. Status does not
+rem report its bind address, so restart it explicitly with Docker-accessible
+rem settings every time this setup script runs.
+"%LMS%" server stop >nul 2>nul
+echo Starting the LM Studio API listener on 0.0.0.0:1234...
+echo Keep Windows Firewall access limited to Private networks.
+"%LMS%" server start --port 1234 --bind 0.0.0.0
 if errorlevel 1 (
     echo The model loaded, but the API server did not start.
     pause
     exit /b 1
+)
+
+powershell -NoProfile -Command "$s=Get-NetTCPConnection -LocalPort 1234 -State Listen -ErrorAction SilentlyContinue ^| Select-Object -First 1; if(-not $s -or $s.LocalAddress -notin @('0.0.0.0','::')){exit 1}; try{$r=Invoke-RestMethod -TimeoutSec 5 http://127.0.0.1:1234/v1/models; if($r.data){exit 0}}catch{}; exit 1"
+if errorlevel 1 (
+    echo LM Studio did not expose a verified network listener on port 1234.
+    echo Open LM Studio Developer settings, enable serving on the local network, and run this file again.
+    pause
+    exit /b 1
+)
+
+docker compose ps --status running --services 2>nul | findstr /x "server" >nul
+if not errorlevel 1 (
+    echo Verifying that the OpenMoxie Docker container can reach LM Studio...
+    docker compose exec -T server python -c "import urllib.request; urllib.request.urlopen('http://host.docker.internal:1234/v1/models',timeout=8).read(); print('Docker-to-LM-Studio connection verified')"
+    if errorlevel 1 (
+        echo LM Studio works on Windows, but Docker cannot reach it. Check Private-network firewall access.
+        pause
+        exit /b 1
+    )
 )
 
 echo.

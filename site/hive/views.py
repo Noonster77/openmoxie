@@ -2,6 +2,7 @@ from django.forms import model_to_dict
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.contrib.auth import get_user_model
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 from django.views import generic
 from django.views.decorators.http import require_http_methods
@@ -25,6 +26,11 @@ from .mqtt.volley import Volley
 from .mqtt.conversation_log import rewrite_daily_transcript
 from .mqtt.conversation_memory import clear_memory, memory_audit
 from .mqtt.ai_factory import create_chat_client, get_chat_model
+from .vision import (
+    control_vision_container, docker_container_status, enroll_face, latest_frame,
+    latest_observation, service_status as vision_service_status,
+    remove_face, set_device_vision,
+)
 import json
 import uuid
 import logging
@@ -53,6 +59,16 @@ class SetupView(generic.TemplateView):
         curr_cfg = HiveConfiguration.objects.filter(name='default').first()
         if curr_cfg:
             context['object'] = curr_cfg
+        context['conversation_count'] = SinglePromptChat.objects.count()
+        context['schedule_count'] = MoxieSchedule.objects.count()
+        context['vision_container'] = docker_container_status()
+        context['vision_service'] = (
+            vision_service_status() if context['vision_container'].get('available')
+            else {'reachable': False}
+        )
+        context['vision_observation'] = (
+            latest_observation() if context['vision_service'].get('reachable') else {}
+        )
         return context
 
 # SETUP-POST - Save system config changes
@@ -75,6 +91,7 @@ def hive_configure(request):
         cfg.chat_api_key = compatible_key
     cfg.stt_provider = request.POST.get('stt_provider', 'openai')
     cfg.local_stt_model = request.POST.get('local_stt_model', 'small.en').strip() or 'small.en'
+    cfg.vision_extension_enabled = request.POST.get('vision_extension_enabled') == 'on'
     if cfg.chat_provider not in ('openai', 'lmstudio', 'compatible', 'openrouter') or cfg.stt_provider not in ('openai', 'local'):
         return HttpResponseBadRequest('Unsupported AI provider selection.')
     if cfg.chat_provider == 'openrouter' and not cfg.chat_base_url:
@@ -103,6 +120,9 @@ def hive_configure(request):
     logger.info("Updated default Hive Configuration")
     # reload any cached db objects
     get_instance().update_from_database()
+    if not cfg.vision_extension_enabled:
+        for device in MoxieDevice.objects.filter(vision_active=True):
+            set_device_vision(device, False, service=get_instance())
     messages.success(request, 'Setup saved and loaded. New conversations will use these settings.')
     return HttpResponseRedirect(reverse("hive:dashboard"))
 
@@ -116,8 +136,6 @@ class DashboardView(generic.TemplateView):
         if alert_message:
             context['alert'] = alert_message
         context['recent_devices'] = MoxieDevice.objects.all()
-        context['conversations'] = SinglePromptChat.objects.all()
-        context['schedules'] = MoxieSchedule.objects.all()
         service = get_instance()
         context['live'] = service.robot_data().connected_list() if service else []
         context['service_status'] = service.service_status() if service else {
@@ -127,6 +145,10 @@ class DashboardView(generic.TemplateView):
         hive_config = HiveConfiguration.objects.filter(name='default').first()
         context['openai_configured'] = bool(hive_config and (hive_config.openai_api_key or '').strip())
         context['ai_config'] = hive_config
+        context['vision_enabled'] = bool(hive_config and hive_config.vision_extension_enabled)
+        context['vision_service'] = vision_service_status() if context['vision_enabled'] else {'reachable': False}
+        context['vision_container'] = docker_container_status() if context['vision_enabled'] else {'available': False, 'state': 'disabled'}
+        context['vision_observation'] = latest_observation() if context['vision_enabled'] else {}
         context['recent_conversation'] = ConversationEvent.objects.select_related('device').order_by('-created_at')[:20]
         flagged_today = ConversationEvent.objects.select_related('device').filter(
             safety_flagged=True,
@@ -145,6 +167,13 @@ class DashboardView(generic.TemplateView):
 class GuideView(generic.TemplateView):
     template_name = 'hive/guide.html'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['devices'] = MoxieDevice.objects.all()
+        cfg = HiveConfiguration.objects.filter(name='default').first()
+        context['vision_enabled'] = bool(cfg and cfg.vision_extension_enabled)
+        return context
+
 # STATUS - Lightweight, credential-free diagnostics used by the dashboard.
 def connection_status(request):
     service = get_instance()
@@ -154,7 +183,127 @@ def connection_status(request):
             'last_connect_error': 'MQTT service has not started.',
             'connected_devices': [],
         }, status=503)
-    return JsonResponse(service.service_status())
+    payload = service.service_status()
+    cfg = HiveConfiguration.objects.filter(name='default').first()
+    vision_enabled = bool(cfg and cfg.vision_extension_enabled)
+    payload['vision'] = {'enabled': vision_enabled}
+    if vision_enabled:
+        payload['vision'].update({
+            'service': vision_service_status(), 'container': docker_container_status(),
+            'observation': latest_observation(),
+        })
+    return JsonResponse(payload)
+
+
+@require_http_methods(["POST"])
+def vision_container_control(request):
+    cfg = HiveConfiguration.objects.filter(name='default').first()
+    if not cfg or not cfg.vision_extension_enabled:
+        return HttpResponseBadRequest('Enable the optional Vision extension in AI settings first.')
+    action = request.POST.get('action', '')
+    if action not in ('start', 'stop', 'restart'):
+        return HttpResponseBadRequest('Choose start, stop, or restart.')
+    try:
+        if action == 'stop':
+            service = get_instance()
+            for device in MoxieDevice.objects.filter(vision_active=True):
+                set_device_vision(device, False, service=service)
+        control_vision_container(action)
+        messages.success(request, f'Vision container {action} requested.')
+    except Exception as exc:
+        messages.error(request, str(exc))
+    return redirect('hive:setup' if request.POST.get('next') == 'setup' else 'hive:dashboard')
+
+
+@require_http_methods(["POST"])
+def vision_extension_control(request):
+    """Explicit Setup-page on/off control for the complete optional feature."""
+    cfg = HiveConfiguration.objects.filter(name='default').first()
+    if not cfg:
+        return HttpResponseBadRequest('Complete the base OpenMoxie setup first.')
+    action = request.POST.get('action', '')
+    if action not in ('enable', 'disable'):
+        return HttpResponseBadRequest('Choose enable or disable.')
+    enabled = action == 'enable'
+    service = get_instance()
+    if not enabled:
+        for device in MoxieDevice.objects.filter(vision_active=True):
+            set_device_vision(device, False, service=service)
+    cfg.vision_extension_enabled = enabled
+    cfg.save(update_fields=['vision_extension_enabled'])
+    if service:
+        service.update_from_database()
+    messages.success(
+        request,
+        'Vision features are enabled.' if enabled else
+        'Vision features are off and active robot cameras were restored.',
+    )
+    return redirect('hive:setup')
+
+
+def vision_frame(request):
+    try:
+        body, content_type = latest_frame()
+        response = HttpResponse(body, content_type=content_type)
+        response['Cache-Control'] = 'no-store'
+        return response
+    except Exception as exc:
+        return JsonResponse({'error': str(exc)}, status=404)
+
+
+@staff_member_required
+def vision_admin(request):
+    """Administrator-only live camera and detector diagnostics."""
+    cfg = HiveConfiguration.objects.filter(name='default').first()
+    return render(request, 'admin/vision_live.html', {
+        'title': 'Live Moxie vision',
+        'vision_enabled': bool(cfg and cfg.vision_extension_enabled),
+    })
+
+
+@staff_member_required
+def vision_admin_status(request):
+    service = vision_service_status()
+    observation = latest_observation(max_age=20) if service.get('reachable') else {
+        'fresh': False, 'objects': [], 'faces': [],
+    }
+    active = list(MoxieDevice.objects.filter(vision_active=True).values(
+        'device_id', 'name', 'vision_mode',
+    ))
+    no_frame_diagnostic = bool(
+        active and service.get('reachable') and not service.get('frames_received')
+    )
+    return JsonResponse({
+        'service': service,
+        'container': docker_container_status(),
+        'observation': observation,
+        'active_robots': active,
+        'no_frame_diagnostic': no_frame_diagnostic,
+        'expected_caption_ip': (
+            HiveConfiguration.objects.filter(name='default')
+            .values_list('external_host', flat=True).first() or ''
+        ),
+    })
+
+
+@require_http_methods(["POST"])
+def vision_face_manage(request):
+    cfg = HiveConfiguration.objects.filter(name='default').first()
+    if not cfg or not cfg.vision_extension_enabled:
+        return HttpResponseBadRequest('The optional Vision extension is disabled.')
+    name = re.sub(r'[^A-Za-z0-9 _-]', '', request.POST.get('name', '')).strip()[:40]
+    if not name:
+        return HttpResponseBadRequest('Choose a name for this face.')
+    try:
+        if request.POST.get('action') == 'delete':
+            remove_face(name)
+            messages.success(request, f'Removed local face samples for {name}.')
+        else:
+            result = enroll_face(name)
+            messages.success(request, f"Saved face sample {result['samples']} for {name}. Capture about five different angles.")
+    except Exception as exc:
+        messages.error(request, str(exc))
+    return redirect('hive:setup' if request.POST.get('next') == 'setup' else 'hive:dashboard')
 
 
 def _safe_debug_tail(limit=80):
@@ -341,6 +490,9 @@ def interact_update(request):
 @require_http_methods(["POST"])
 def reload_database(request):
     get_instance().update_from_database()
+    if request.POST.get('next') == 'setup':
+        messages.success(request, 'Bundled database content reloaded.')
+        return redirect('hive:setup')
     return redirect('hive:dashboard_alert', alert_message='Updated from database.')
 
 # ENDPOINT - Render QR code to migrate Moxie
@@ -412,14 +564,13 @@ def moxie_edit(request, pk):
            device.robot_config = {}
         device.robot_config["screen_brightness"] = float(request.POST["screen_brightness"])
         device.robot_config["audio_volume"] = float(request.POST["audio_volume"])
-        if device.robot_settings is None:
-            device.robot_settings = {}
-        props = device.robot_settings.setdefault('props', {})
-        props['cloud_tts_voice_id'] = request.POST.get('tts_voice', 'Joanna')
-        try:
-            props['cloud_tts_speech_rate'] = str(max(80, min(115, int(request.POST.get('tts_speech_rate', 96)))))
-        except ValueError:
-            return HttpResponseBadRequest('Speech rate must be a number.')
+        # Older experimental builds wrote undocumented cloud_tts_* properties.
+        # The robot ignores them; remove them rather than advertising controls
+        # that do not affect its installed speech engine.
+        if device.robot_settings:
+            props = device.robot_settings.get('props', {})
+            props.pop('cloud_tts_voice_id', None)
+            props.pop('cloud_tts_speech_rate', None)
         if "child_pii" in device.robot_config:
             device.robot_config["child_pii"]["nickname"] = request.POST["nickname"]
         else:
@@ -681,9 +832,19 @@ def _interrupt_and_launch(service, device, module_id, content_id='default', text
 def robot_control(request, pk):
     device = get_object_or_404(MoxieDevice, pk=pk)
     action = request.POST.get('action', '')
-    if action not in ('wake', 'chat', 'homework', 'reasoning', 'trivia', 'jokes', 'interrupt', 'sleep'):
+    if action not in ('wake', 'chat', 'homework', 'reasoning', 'trivia', 'jokes', 'vision', 'ispy', 'vision_off', 'interrupt', 'sleep'):
         return HttpResponseBadRequest('Unknown robot action.')
     service = get_instance()
+    hive_config = HiveConfiguration.objects.filter(name='default').first()
+    if action in ('vision', 'ispy'):
+        if not hive_config or not hive_config.vision_extension_enabled:
+            return HttpResponseBadRequest('The optional Vision extension is disabled in AI settings.')
+        status = vision_service_status()
+        if not status.get('reachable'):
+            message = 'Vision service is not running. Use Start Vision in Parent Corner or run setup-vision.bat.'
+            return JsonResponse({'ok': False, 'message': message}, status=503) if request.POST.get('ajax') == '1' else redirect('hive:dashboard_alert', alert_message=message)
+    if device.vision_active and action not in ('vision', 'ispy'):
+        set_device_vision(device, False, service=service)
     online = service.robot_data().device_online(device.device_id)
     message = ''
     duplicate = RobotCommandEvent.objects.filter(
@@ -701,15 +862,19 @@ def robot_control(request, pk):
         status='failed',
         detail=f'Superseded by a newer {action} request.',
     )
-    if action in ('wake', 'chat', 'homework', 'reasoning', 'trivia', 'jokes', 'interrupt'):
-        target = action if action in ('homework', 'reasoning', 'trivia', 'jokes') else 'chat'
+    if action in ('wake', 'chat', 'homework', 'reasoning', 'trivia', 'jokes', 'vision', 'ispy', 'interrupt'):
+        target = action if action in ('homework', 'reasoning', 'trivia', 'jokes', 'vision', 'ispy') else 'chat'
         module_id = {
             'chat': 'OPENMOXIE_CHAT',
             'homework': 'OPENMOXIE_HOMEWORK',
             'reasoning': 'OPENMOXIE_REASONING',
             'trivia': 'OPENMOXIE_TRIVIA',
             'jokes': 'OPENMOXIE_JOKES',
+            'vision': 'OPENMOXIE_VISION',
+            'ispy': 'OPENMOXIE_ISPY',
         }[target]
+        if target in ('vision', 'ispy'):
+            set_device_vision(device, True, mode=target, service=service)
         _set_quick_launch_schedule(device, module_id, label=target.title())
         service.handle_config_updated(device)
         service.robot_data().schedule_update_live(device)
@@ -721,10 +886,14 @@ def robot_control(request, pk):
                 'reasoning': 'Reasoning mode is ready. Ask me a complex question.',
                 'trivia': 'Trivia time! Get your thinking cap ready.',
                 'jokes': "Joke time! I've got some good ones ready.",
+                'vision': "My local camera mode is ready. Ask me what I see.",
+                'ispy': 'I spy with my little eye something in this room!',
             }[target],
         )
         label = {'wake': 'Wake and Chat', 'interrupt': 'Return to Chat'}.get(action, action.title())
         message = label + (' requested; waiting for Moxie to confirm the activity.' if immediate else ' queued for the next connection.')
+    elif action == 'vision_off':
+        message = 'Vision is off and the previous robot camera settings were restored.'
     elif action == 'sleep':
         if online:
             if device.robot_config is None:
@@ -741,14 +910,15 @@ def robot_control(request, pk):
         else:
             sent = False
         message = 'Sleep requested. Waiting for Moxie to report sleep; voice fallback: “Go to sleep, please.”' if sent else 'Moxie is offline; no sleep command was sent.'
-    command_status = 'sent' if online else (
-        'queued' if action in ('wake', 'chat', 'homework', 'reasoning', 'trivia', 'jokes', 'interrupt') else 'failed'
-    )
+    command_status = 'confirmed' if action == 'vision_off' else ('sent' if online else (
+        'queued' if action in ('wake', 'chat', 'homework', 'reasoning', 'trivia', 'jokes', 'vision', 'ispy', 'interrupt') else 'failed'
+    ))
     RobotCommandEvent.objects.create(
         device=device, action=action, label={
             'wake': 'Wake & Chat', 'chat': 'Start chat', 'homework': 'Start homework',
             'reasoning': 'Start reasoning',
             'trivia': 'Start trivia', 'jokes': 'Start joke time', 'interrupt': 'Return to chat',
+            'vision': 'Start vision', 'ispy': 'Start I Spy', 'vision_off': 'Turn vision off',
             'sleep': 'Go to sleep',
         }.get(action, action.title()), status=command_status,
         detail=message,
@@ -804,9 +974,34 @@ class MoxiePuppetView(generic.DetailView):
     template_name = "hive/puppet.html"
     model = MoxieDevice
 
+    def get_context_data(self, **kwargs):
+        from .puppet import (
+            PUPPET_ACTION_GROUPS, PUPPET_FACE_PRESETS, PUPPET_GESTURES,
+            PUPPET_MOODS, PUPPET_SOUND_CUES, PUPPET_SOUND_GROUPS,
+            PUPPET_VOCAL_STYLES,
+        )
+        context = super().get_context_data(**kwargs)
+        config = self.object.robot_config or {}
+        context.update({
+            'puppet_action_groups': PUPPET_ACTION_GROUPS,
+            'puppet_moods': PUPPET_MOODS,
+            'puppet_vocal_styles': PUPPET_VOCAL_STYLES,
+            'puppet_sounds': PUPPET_SOUND_CUES,
+            'puppet_sound_groups': PUPPET_SOUND_GROUPS,
+            'puppet_gestures': PUPPET_GESTURES,
+            'puppet_face_presets': PUPPET_FACE_PRESETS,
+            'puppet_volume': config.get('audio_volume', .6),
+        })
+        return context
+
 # PUPPET API - Handle AJAX calls from puppet view
 @csrf_exempt
 def puppet_api(request, pk):
+    from .puppet import (
+        PUPPET_ACTION_MAP, PUPPET_FACE_OPTIONS, PUPPET_GESTURE_EVENTS,
+        PUPPET_MOOD_NAMES, PUPPET_SOUND_ASSETS, PUPPET_VOCAL_GENRES,
+        apply_face_preset,
+    )
     try:
         device = MoxieDevice.objects.get(pk=pk)
         if request.method == 'GET':
@@ -814,14 +1009,15 @@ def puppet_api(request, pk):
             result = { 
                 "online": get_instance().robot_data().device_online(device.device_id),
                 "puppet_state": get_instance().robot_data().get_puppet_state(device.device_id),
-                "puppet_enabled": device.robot_config.get("moxie_mode") == "TELEHEALTH" if device.robot_config else False
+                "puppet_enabled": device.robot_config.get("moxie_mode") == "TELEHEALTH" if device.robot_config else False,
+                "volume": (device.robot_config or {}).get('audio_volume', .6),
             }
             return JsonResponse(result)
         elif request.method == 'POST':
             # Handle COMMANDS request
             if not device.robot_config:
                 device.robot_config = {}
-            cmd = request.POST['command']
+            cmd = request.POST.get('command', '')
             if cmd == "enable":
                 device.robot_config["moxie_mode"] = "TELEHEALTH"
                 device.save()
@@ -833,8 +1029,53 @@ def puppet_api(request, pk):
             elif cmd == "interrupt":
                 get_instance().send_telehealth_interrupt(device.device_id)
             elif cmd == "speak":
-                get_instance().send_telehealth_speech(device.device_id, request.POST['speech'], 
-                                                      request.POST['mood'], float(request.POST['intensity']))
+                speech = request.POST.get('speech', '').strip()
+                mood = request.POST.get('mood', 'neutral')
+                sound = request.POST.get('sound', 'none')
+                gesture = request.POST.get('gesture', 'auto')
+                vocal_style = request.POST.get('vocal_style', 'natural')
+                if not speech and sound == 'none':
+                    return HttpResponseBadRequest('Enter something for Moxie to say or choose a sound.')
+                if (mood not in PUPPET_MOOD_NAMES or sound not in PUPPET_SOUND_ASSETS
+                        or gesture not in PUPPET_GESTURE_EVENTS
+                        or vocal_style not in PUPPET_VOCAL_GENRES):
+                    return HttpResponseBadRequest('Choose a supported performance control.')
+                try:
+                    intensity = max(0.0, min(1.0, float(request.POST.get('intensity', .5))))
+                    rate = max(.7, min(1.3, float(request.POST.get('rate', 1.0))))
+                except ValueError:
+                    return HttpResponseBadRequest('Intensity and pace must be numbers.')
+                get_instance().send_telehealth_speech(
+                    device.device_id, speech, mood, intensity, sound=sound, gesture=gesture,
+                    rate=rate, vocal_style=vocal_style,
+                )
+            elif cmd == "settings":
+                try:
+                    volume = max(.1, min(1.0, float(request.POST.get('volume', .6))))
+                except ValueError:
+                    return HttpResponseBadRequest('Volume must be a number.')
+                device.robot_settings = device.robot_settings or {}
+                props = device.robot_settings.setdefault('props', {})
+                props.pop('cloud_tts_voice_id', None)
+                props.pop('cloud_tts_speech_rate', None)
+                device.robot_config['audio_volume'] = volume
+                device.save(update_fields=['robot_settings', 'robot_config'])
+                get_instance().handle_config_updated(device)
+            elif cmd == "action":
+                action = request.POST.get('action', '')
+                if action not in PUPPET_ACTION_MAP:
+                    return HttpResponseBadRequest('Choose a supported Puppet action.')
+                get_instance().send_telehealth_action(device.device_id, action)
+            elif cmd == "face":
+                preset = request.POST.get('preset', '')
+                if preset not in PUPPET_FACE_OPTIONS:
+                    return HttpResponseBadRequest('Choose a supported appearance preset.')
+                child_pii = device.robot_config.setdefault('child_pii', {})
+                child_pii['face_options'] = apply_face_preset(child_pii.get('face_options'), preset)
+                device.save(update_fields=['robot_config'])
+                get_instance().handle_config_updated(device)
+            else:
+                return HttpResponseBadRequest('Unknown Puppet command.')
         return JsonResponse({'result': True})
     except MoxieDevice.DoesNotExist as e:
         logger.warning("Moxie puppet speak for unfound pk {pk}")

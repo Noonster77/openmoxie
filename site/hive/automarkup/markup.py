@@ -504,6 +504,7 @@ def markup(s: str,
            markMoodAndIntensity: Union[Tuple[str, int], None] = None,
            prettyPrint: bool = True,
            markup_pauses: float = None,
+           synth_rate: float = None,
            text_replacements: Dict[str, str] = None,
            debug: bool = False) -> str:
     """
@@ -611,8 +612,10 @@ def markup(s: str,
     if markup_pauses is None:
         markup_pauses = mlparams.PAUSE_LARGE_TEXT if len(sentences) >= mlparams.LARGE_TEXT_SENTENCE_THRESHOLD \
                                                   else mlparams.PAUSE_DEFAULT
-    synthRate = mlparams.SYNTH_RATE_LARGE_TEXT if len(sentences) >= mlparams.LARGE_TEXT_SENTENCE_THRESHOLD \
-                                                  else mlparams.SYNTH_RATE_DEFAULT
+    synthRate = synth_rate if synth_rate is not None else (
+        mlparams.SYNTH_RATE_LARGE_TEXT if len(sentences) >= mlparams.LARGE_TEXT_SENTENCE_THRESHOLD
+        else mlparams.SYNTH_RATE_DEFAULT
+    )
         
     return  ' '.join(markup_sentence(s = sentence,
                                       rules = rules,

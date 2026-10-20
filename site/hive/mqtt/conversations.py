@@ -4,6 +4,7 @@ CONVERSATIONS - Framework for Moxie remote applications / conversations
 import logging
 import ast
 import copy
+import json
 import random
 import re
 import traceback
@@ -14,10 +15,23 @@ from ..models import Joke, MoxieDevice, SinglePromptChat, TriviaQuestion
 from .volley import Volley
 from .conversation_log import safety_redirect
 from .conversation_memory import remember_exchange as save_memory_exchange, speaker_items
+from ..vision import latest_observation
 
 logger = logging.getLogger(__name__)
 
 _DEFAULT_SUMMARY_PROMPT = "Summarize the following conversation between the friendly robot Moxie, and the user.  Keep the summary brief, but include any important details."
+
+_LOOK_AROUND_MARK = (
+    '<mark name="cmd:behaviour-tree,data:{+transition+:0.5,+duration+:1.0,'
+    '+repeat+:1,+layerBlendInTime+:0.5,+layerBlendOutTime+:0.5,+blocking+:false,'
+    '+action+:0,+variableName+:++,+variableValue+:++,+eventName+:+Gesture_None+,'
+    '+lifetime+:0,+category+:+None+,+behaviour+:+Bht_360_Look_Around+,+Track+:++}"/>'
+)
+
+
+def _look_around_markup(text):
+    """Run the firmware's bundled 360 look-around behavior before speech."""
+    return _LOOK_AROUND_MARK + text
 
 '''
 Base type of a module that has a chat session interaction on Moxie.  It
@@ -89,6 +103,165 @@ class ChatSession:
     
     def complete_hook(self, device_id, volley:Volley):
         pass
+
+
+def _spoken_objects(observation):
+    labels = [item.get('label', 'object') for item in observation.get('objects', [])]
+    if not labels:
+        return ''
+    counts = {label: labels.count(label) for label in dict.fromkeys(labels)}
+    parts = [label if count == 1 else f'{count} {label}s' for label, count in counts.items()]
+    return parts[0] if len(parts) == 1 else ', '.join(parts[:-1]) + ', and ' + parts[-1]
+
+
+def _associate_single_recognized_face(volley, observation):
+    """Conservatively associate identity only for one enrolled, allowed face."""
+    known = [face.get('name') for face in observation.get('faces', []) if face.get('name') not in (None, '', 'unknown')]
+    if len(known) != 1:
+        return None
+    device = MoxieDevice.objects.filter(device_id=volley.device_id).first()
+    allowed = {name.casefold(): name for name in (device.speaker_names if device else [])}
+    canonical = allowed.get(known[0].casefold())
+    if canonical:
+        volley.persist_data['active_speaker'] = canonical
+        return canonical
+    return None
+
+
+class VisionChatSession(ChatSession):
+    """Fresh-frame, local object interaction for the optional vision extension."""
+    def __init__(self):
+        super().__init__(max_history=4)
+
+    def handle_volley(self, volley: Volley):
+        volley.assign_local_data(self._local_data)
+        observation = latest_observation()
+        _associate_single_recognized_face(volley, observation)
+        if volley.request.get('command') == 'prompt':
+            volley.set_output(
+                "My local camera mode is on. I'll look toward you while my object detector gets a fresh view. Ask me what I see.",
+                None,
+            )
+            # Native on-robot face attention is smoother than trying to steer
+            # from the roughly one-frame-per-second caption stream.
+            volley.add_execution_action('eb_start_binned_face_search')
+            return
+        if not observation.get('fresh'):
+            volley.set_output(
+                "I don't have a fresh camera picture yet. Please keep me awake, stand in front of me, and check the Vision status in Parent Corner.",
+                None,
+            )
+            return
+        speech = volley.request.get('speech', '').strip().lower()
+        objects = observation.get('objects', [])
+        labels = [item.get('label', '') for item in objects]
+        if re.search(r'\b(?:what|describe|see|around|room)\b', speech):
+            text = f'I can see {_spoken_objects(observation)}.' if objects else "I can't identify a clear object yet."
+        elif re.search(r'\b(?:how many|count)\b', speech):
+            target = next((label for label in labels if label and label in speech), None)
+            text = f'I can count {labels.count(target)} {target}s.' if target else f'I can identify {len(objects)} objects in this view.'
+        elif re.search(r'\b(?:find|is there|do you see|can you see)\b', speech):
+            target = next((label for label in labels if label and label in speech), None)
+            text = f'Yes. I see a {target}.' if target else "I don't recognize that in my current view. Try moving it closer and holding still."
+        else:
+            context = json.dumps(objects[:12], separators=(',', ':')) if objects else '[]'
+            try:
+                text = chat_completion([
+                    {'role': 'system', 'content': (
+                        'You are Moxie answering from local object detections. Use only the DETECTIONS data. '
+                        'Never invent an object or a person identity. Mention uncertainty. Reply in at most two short spoken sentences. '
+                        f'DETECTIONS: {context}'
+                    )},
+                    {'role': 'user', 'content': speech},
+                ], max_tokens=80, temperature=0.2)
+            except Exception:
+                logger.exception('Vision conversational answer failed')
+                text = f'Right now I can identify {_spoken_objects(observation)}.' if objects else "I can't identify that yet."
+        volley.set_output(text, None)
+
+
+class ISpyChatSession(ChatSession):
+    """A local I Spy game whose secret is selected from a fresh detection."""
+    EXCLUDED = {'person'}
+
+    def __init__(self):
+        super().__init__(max_history=0)
+        self._local_data['secret'] = None
+        self._local_data['questions'] = 0
+
+    def _choose(self):
+        observation = latest_observation()
+        candidates = [
+            item for item in observation.get('objects', [])
+            if item.get('label') not in self.EXCLUDED and item.get('confidence', 0) >= .4
+        ] if observation.get('fresh') else []
+        self._local_data['secret'] = random.choice(candidates) if candidates else None
+        self._local_data['questions'] = 0
+        return observation
+
+    def handle_volley(self, volley: Volley):
+        volley.assign_local_data(self._local_data)
+        command = volley.request.get('command')
+        if command == 'prompt':
+            # Let the native behavior finish before selecting from the next
+            # camera frame. The user's next utterance (normally "ready")
+            # becomes the synchronization point without a fixed sleep timer.
+            self._local_data['secret'] = None
+            self._local_data['questions'] = 0
+            text = "I'll look around the room now. When I stop moving, say ready and I'll choose something I can see."
+            volley.set_output(text, _look_around_markup(text))
+            return
+        secret = self._local_data.get('secret')
+        if not secret:
+            self._choose()
+            secret = self._local_data.get('secret')
+        if not secret:
+            volley.set_output(
+                "I don't see a clear game object yet. Put a common object in front of me, hold still for a moment, and say ready.",
+                None,
+            )
+            return
+        _associate_single_recognized_face(volley, latest_observation())
+        if command == 'prompt':
+            volley.set_output("I spy with my little eye something in this room. Ask yes-or-no questions, or make a guess!", None)
+            return
+        speech = volley.request.get('speech', '').strip().lower()
+        label = secret['label'].lower()
+        if re.search(rf'\b{re.escape(label)}s?\b', speech):
+            volley.set_output(f'You found it! I picked the {label}. Great spying! Want to play again?', None)
+            self._local_data['secret'] = None
+            return
+        if re.search(r'\b(?:again|new one|play again|ready)\b', speech):
+            self._choose()
+            if self._local_data.get('secret'):
+                volley.set_output('I picked a new object. Ask your first yes-or-no question!', None)
+            else:
+                volley.set_output("I need a clearer object before I can pick a new one.", None)
+            return
+        self._local_data['questions'] += 1
+        # Answer common visual attributes locally; use the configured chat AI
+        # only for phrasing questions that do not match these safe facts.
+        if 'color' in speech or any(color in speech for color in ('red', 'blue', 'green', 'yellow', 'black', 'white', 'brown', 'gray', 'orange', 'purple', 'pink')):
+            asked = next((color for color in ('red', 'blue', 'green', 'yellow', 'black', 'white', 'brown', 'gray', 'orange', 'purple', 'pink') if color in speech), None)
+            text = f"Yes, it looks {secret['color']}." if asked == secret.get('color') else (f"No, it doesn't look {asked}." if asked else f"It looks mostly {secret['color']}.")
+        elif any(word in speech for word in ('left', 'right', 'middle', 'center')):
+            asked = 'center' if 'middle' in speech else next((word for word in ('left', 'right', 'center') if word in speech), '')
+            text = 'Yes.' if asked == secret.get('position') else 'No.'
+        else:
+            try:
+                text = chat_completion([
+                    {'role': 'system', 'content': (
+                        'You run an I Spy game. Answer the question with yes, no, or maybe using only this secret detection. '
+                        'Do not reveal or say the object label unless the user guessed it. One short sentence. '
+                        f'SECRET DATA: {json.dumps(secret, separators=(",", ":"))}'
+                    )},
+                    {'role': 'user', 'content': speech},
+                ], max_tokens=35, temperature=0.1)
+            except Exception:
+                text = "Maybe. Try asking about its color or where it is."
+        if self._local_data['questions'] >= 8:
+            text += f" Here's a big hint: it starts with {label[0]}."
+        volley.set_output(text, None)
 
 '''
 Our simple Single Prompt conversation.  It uses the ChatSession to manage the history
