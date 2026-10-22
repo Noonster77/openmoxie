@@ -345,6 +345,20 @@ def live_activity(request, pk):
     })
 
 
+@require_http_methods(["GET"])
+def robot_debug(request, pk):
+    from .robot_debug import build_robot_debug
+    device = get_object_or_404(MoxieDevice, pk=pk)
+    response = JsonResponse(build_robot_debug(device, get_instance()))
+    response['Cache-Control'] = 'no-store'
+    return response
+
+
+class RobotDebugView(generic.DetailView):
+    template_name = 'hive/robot_debug.html'
+    model = MoxieDevice
+
+
 class LiveMonitorView(generic.DetailView):
     template_name = 'hive/monitor.html'
     model = MoxieDevice

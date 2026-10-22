@@ -1,0 +1,53 @@
+{% extends 'base.html' %}{% block content %}
+<div id="robot-debug">
+  <div class="page-heading"><div><div class="eyebrow">Robot diagnostics</div><h1>{{ object.name|default:'Moxie' }} live status</h1><p>Connection, reported state, and command progress. Updates every two seconds.</p></div><div class="secondary-links"><a href="{% url 'hive:dashboard' %}">Control center</a><a href="{% url 'hive:monitor' object.pk %}">Live room</a></div></div>
+  <section class="panel rd-summary" aria-live="polite"><div><strong id="rd-title">Checking robot status</strong><p id="rd-detail">Waiting for the first status report from OpenMoxie.</p></div><button id="rd-pause" class="btn btn-outline-secondary" type="button" aria-pressed="false">Pause updates</button></section>
+  <p id="rd-refresh" class="rd-refresh" role="status">Connecting to status service...</p>
+  <div class="metric-grid mb-4">
+    <div class="metric"><div class="metric-label">Robot connection</div><div class="metric-value"><span id="rd-dot" class="status-dot"></span><span id="rd-online">Checking</span></div><small id="rd-broker">MQTT service: checking</small></div>
+    <div class="metric"><div class="metric-label">Last reported mode</div><div id="rd-mode" class="metric-value">Unknown</div><small id="rd-mode-time">No mode report yet</small></div>
+    <div class="metric"><div class="metric-label">Last robot telemetry</div><div id="rd-age" class="metric-value">Waiting</div><small id="rd-telemetry-time">No report yet</small></div>
+    <div class="metric"><div class="metric-label">Latest command</div><div id="rd-command" class="metric-value">Waiting</div><small id="rd-command-status">No data yet</small></div>
+  </div>
+  <div class="rd-layout">
+    <section class="panel"><h2 class="panel-title">What is happening</h2><p class="rd-caption">Newest observed events first. A sent command is only confirmed when Moxie reports back.</p><ol id="rd-events" class="rd-events"><li>Waiting for events...</li></ol></section>
+    <div><section class="panel mb-4"><h2 class="panel-title">Command progress</h2><div id="rd-commands">Waiting for commands...</div></section><section class="panel"><h2 class="panel-title">Last reported state</h2><p id="rd-state-time" class="rd-caption">Waiting for a state report</p><dl id="rd-state" class="rd-state"></dl><p id="rd-state-empty">No robot state received yet.</p></section></div>
+  </div>
+  <section class="panel mt-4"><h2 class="panel-title">What this view can tell you</h2><p>Robot reports show what OpenMoxie has received. An on-screen progress icon alone does not identify the robot's internal startup step.</p><ul id="rd-limits"></ul><details><summary>Technical status snapshot</summary><p class="rd-caption">Filtered diagnostic metadata; conversation content is excluded.</p><pre id="rd-technical" class="rd-technical">Waiting for status...</pre></details></section>
+</div>
+<style>
+#robot-debug .rd-summary{display:flex;justify-content:space-between;gap:1rem;align-items:center;border-left:4px solid #718096}#robot-debug .rd-summary p{margin:.35rem 0 0}#robot-debug .rd-summary[data-level="error"]{border-left-color:#c03939}#robot-debug .rd-summary[data-level="warning"]{border-left-color:#b7791f}#robot-debug .rd-summary[data-level="info"]{border-left-color:#268578}#robot-debug .rd-refresh,#robot-debug .rd-caption{color:#637082;font-size:.9rem}#robot-debug .rd-refresh.rd-failed{color:#a12828;font-weight:600}#robot-debug .rd-layout{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:1.25rem}#robot-debug .rd-events{padding:0;list-style:none;max-height:650px;overflow:auto;margin:0}#robot-debug .rd-events li,#robot-debug .rd-command{border-top:1px solid #e4e9ee;padding:.85rem 0;overflow-wrap:anywhere}#robot-debug .rd-events time,#robot-debug .rd-command small{display:block;color:#637082;font-size:.8rem;margin-top:.2rem}#robot-debug .rd-events .rd-error{color:#a12828}#robot-debug .rd-events .rd-warning{color:#916014}#robot-debug .rd-command p{font-size:.9rem;margin:.25rem 0 0}#robot-debug .rd-state{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.5rem}#robot-debug .rd-state dd{margin:0;overflow-wrap:anywhere}#robot-debug .rd-technical{white-space:pre-wrap;overflow-wrap:anywhere;background:#f4f6f8;padding:1rem;max-height:350px;overflow:auto;font-size:.8rem}#robot-debug details summary{cursor:pointer;font-weight:600}#robot-debug .metric-value{overflow-wrap:anywhere;font-size:1.3rem}@media(max-width:760px){#robot-debug .rd-layout{grid-template-columns:1fr}#robot-debug .rd-summary{align-items:flex-start;flex-direction:column}}
+</style>
+<script>
+(function(){
+  const url="{% url 'hive:robot_debug' object.pk %}", el=id=>document.getElementById('rd-'+id);
+  let paused=false, timer=null, running=false, lastSuccess=null;
+  const text=(id,value)=>{el(id).textContent=value;};
+  function time(value){if(!value)return 'Not reported';const d=new Date(value);return Number.isNaN(d.getTime())?'Not reported':d.toLocaleString();}
+  function age(seconds){if(seconds===null||seconds===undefined)return 'Not reported';seconds=Math.max(0,Math.floor(seconds));if(seconds<60)return seconds+'s ago';if(seconds<3600)return Math.floor(seconds/60)+'m '+seconds%60+'s ago';return Math.floor(seconds/3600)+'h '+Math.floor(seconds%3600/60)+'m ago';}
+  function node(tag,value,className){const n=document.createElement(tag);n.textContent=value;if(className)n.className=className;return n;}
+  function status(value){return ({confirmed:'Robot confirmed',failed:'Failed',queued:'Queued for reconnect',pending:'Sent; awaiting robot',sent:'Sent; awaiting robot'})[value]||value||'Unknown';}
+  function render(d){
+    const c=d.connection||{}, broker=d.broker||{}, commands=d.commands||[], events=d.events||[], summary=d.summary||{};
+    text('title',summary.title||'Robot status');text('detail',summary.detail||'Waiting for robot evidence.');el('title').closest('section').dataset.level=summary.level||'info';
+    text('online',c.online?'Connected':'Offline');el('dot').className='status-dot '+(c.online?'online':'offline');text('broker','MQTT service: '+(broker.connected?'connected':'disconnected'));
+    text('mode',c.mode||'Unknown');text('age',age(c.telemetry_age_seconds)+(c.telemetry_stale?' (stale)':''));text('telemetry-time',time(c.last_telemetry_at));
+    text('mode-time',c.last_mode_at?'Reported '+time(c.last_mode_at):'No mode report yet');
+    text('command',commands[0]?.label||'None recorded');text('command-status',commands.length?status(commands[0].status):'No command history');
+    const eventBox=el('events');eventBox.replaceChildren();if(!events.length)eventBox.append(node('li','No diagnostic events recorded yet.'));events.slice().reverse().forEach(e=>{const li=node('li','',e.level==='error'?'rd-error':e.level==='warning'?'rd-warning':'');li.append(node('strong',e.message||e.kind||'Robot event'),node('time',time(e.time)));eventBox.append(li);});
+    const commandBox=el('commands');commandBox.replaceChildren();if(!commands.length)commandBox.append(node('p','No commands recorded.'));commands.slice(0,8).forEach(c=>{const item=node('div','','rd-command');item.append(node('strong',c.label||c.action||'Command'),node('small',status(c.status)+' · '+time(c.time)));if(c.detail)item.append(node('p',c.detail));commandBox.append(item);});
+    text('state-time','Reported '+time(c.last_state_at||c.last_telemetry_at)+'; retained values may predate this connection.');const stateBox=el('state');stateBox.replaceChildren();const entries=Object.entries(d.state||{});el('state-empty').hidden=entries.length>0;entries.forEach(([key,value])=>{stateBox.append(node('dt',key.replace(/_/g,' ')),node('dd',typeof value==='object'?JSON.stringify(value):String(value)));});
+    el('limits').replaceChildren(...(d.limitations||[]).map(l=>node('li',l)));text('technical',JSON.stringify(d,null,2));
+  }
+  function stale(reason){el('dot').className='status-dot';text('online','Unknown · view stale');text('title','Live status unavailable');text('detail',reason+' Last received values below may be out of date.');el('title').closest('section').dataset.level='warning';el('refresh').className='rd-refresh rd-failed';}
+  async function refresh(){
+    if(paused||running)return;running=true;const controller=new AbortController(), timeout=setTimeout(()=>controller.abort(),8000);
+    try{const response=await fetch(url,{cache:'no-store',signal:controller.signal,headers:{Accept:'application/json'}});if(!response.ok)throw new Error('Status service returned '+response.status);const d=await response.json();if(!d.connection||!d.summary)throw new Error('Incomplete status response');lastSuccess=new Date();render(d);el('refresh').className='rd-refresh';text('refresh','Live · refreshed '+lastSuccess.toLocaleTimeString()+' · timestamps use your browser time zone');}
+    catch(e){stale(e.name==='AbortError'?'Status request timed out.':'Cannot reach the live status service.');text('refresh','Refresh failed'+(lastSuccess?' · last successful refresh '+lastSuccess.toLocaleTimeString():' · no status received')+' · retrying every two seconds');}
+    finally{clearTimeout(timeout);running=false;if(paused){stale('Updates are paused.');text('refresh','Paused'+(lastSuccess?' · last successful refresh '+lastSuccess.toLocaleTimeString():''));}else timer=setTimeout(refresh,2000);}
+  }
+  el('pause').addEventListener('click',()=>{paused=!paused;clearTimeout(timer);el('pause').textContent=paused?'Resume updates':'Pause updates';el('pause').setAttribute('aria-pressed',String(paused));if(paused){stale('Updates are paused.');text('refresh','Paused'+(lastSuccess?' · last successful refresh '+lastSuccess.toLocaleTimeString():''));}else{text('refresh','Refreshing...');refresh();}});
+  refresh();
+})();
+</script>
+{% endblock %}

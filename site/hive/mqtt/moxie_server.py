@@ -11,6 +11,7 @@ import base64
 import ssl
 import threading
 import uuid
+from collections import deque
 from datetime import datetime, timedelta, timezone
 from .ai_factory import set_openai_key, configure_ai
 from .robot_credentials import RobotCredentials
@@ -117,6 +118,8 @@ class MoxieServer:
         self._vision_watchdog_thread = None
         self._vision_extension_enabled = False
         self._status_lock = threading.Lock()
+        self._debug_lock = threading.Lock()
+        self._debug_records = {}
         self._status = {
             "broker_connected": False,
             "started_at": self._timestamp(),
@@ -142,6 +145,41 @@ class MoxieServer:
     def _update_status(self, **values):
         with self._status_lock:
             self._status.update(values)
+
+    def _note_robot_debug(self, device_id, kind=None, message=None, level='info', topic=None):
+        """Keep bounded, per-robot metadata; never retain wire payloads or speech."""
+        if not hasattr(self, '_debug_lock'):
+            return
+        now = self._timestamp()
+        with self._debug_lock:
+            if device_id not in self._debug_records:
+                if len(self._debug_records) >= 32:
+                    self._debug_records.pop(next(iter(self._debug_records)))
+                self._debug_records[device_id] = {
+                    'last_telemetry_at': None, 'last_topic': None, 'events': deque(maxlen=80),
+                }
+            record = self._debug_records[device_id]
+            if topic:
+                record['last_telemetry_at'] = now
+                record['last_topic'] = topic
+            if kind and message:
+                previous = next((e for e in reversed(record['events']) if e['kind'] == kind), None)
+                if previous and previous['message'] == message and (
+                    datetime.fromisoformat(now) - datetime.fromisoformat(previous['time'])
+                ).total_seconds() < 30:
+                    return
+                record['events'].append({'time': now, 'level': level, 'kind': kind, 'message': message})
+
+    def robot_debug_snapshot(self, device_id):
+        if not hasattr(self, '_debug_lock'):
+            return {'last_telemetry_at': None, 'last_topic': None, 'events': []}
+        with self._debug_lock:
+            record = self._debug_records.get(device_id, {})
+            return {
+                'last_telemetry_at': record.get('last_telemetry_at'),
+                'last_topic': record.get('last_topic'),
+                'events': [dict(event) for event in record.get('events', [])],
+            }
 
     def service_status(self):
         """Return a JSON-safe diagnostic snapshot without credentials or payloads."""
@@ -257,6 +295,8 @@ class MoxieServer:
         # Broker notifications are not retained. Connections known before an
         # outage must be rediscovered from fresh connect/state/event traffic.
         # Conversation memory is persisted as it changes, independently of this cache.
+        for device_id in self._robot_data.connected_list():
+            self._note_robot_debug(device_id, 'connection', 'Server lost its broker connection.', 'warning')
         with self._device_init_lock:
             self._connection_epoch += 1
             self._device_init_futures.clear()
@@ -273,6 +313,10 @@ class MoxieServer:
             if len(dec) >= 4 and dec[0] == "" and dec[1] == "devices":
                 fromdevice = dec[2]
                 basetype = dec[3]
+                # Only recognized channels count as robot telemetry. Broker metrics
+                # and HTTP refreshes must never make a quiet robot look active.
+                if basetype in ('events', 'state'):
+                    self._note_robot_debug(fromdevice, topic='/'.join(dec[3:5]))
                 self._update_status(
                     last_device_activity=self._timestamp(),
                     last_device_id=fromdevice,
@@ -300,8 +344,10 @@ class MoxieServer:
             match = self._connect_pattern.search(line)
             match2 = None if match else self._disconnect_pattern.search(line)
             if match:
+                self._note_robot_debug(match.group(2), 'connection', 'Robot connected to OpenMoxie.')
                 self.check_device_connect(match.group(2), match.group(1))
             elif match2:
+                self._note_robot_debug(match2.group(1), 'connection', 'Robot disconnected.', 'warning')
                 getattr(self, '_vision_armed_devices', set()).discard(match2.group(1))
                 getattr(self, '_vision_power_state', {}).pop(match2.group(1), None)
                 getattr(self, '_vision_stale_episodes', {}).pop(match2.group(1), None)
@@ -332,6 +378,7 @@ class MoxieServer:
         if eventname == "remote-chat" or eventname == "remote-chat-staging":
             rcr = json.loads(msg.payload)
             if rcr.get('backend') == "data" and rcr.get('query',{}).get('query') == "modules":
+                self._note_robot_debug(device_id, 'modules', 'Robot requested its available activities.')
                 # REMOTE MODULES REQUEST
                 req_id = rcr.get('event_id')
                 # Let the remote chat module provide the modules data
@@ -339,6 +386,7 @@ class MoxieServer:
                 logger.debug(f"Tx modules to: remote_chat: {rc_modules}")
                 self.send_command_to_bot_json(device_id, 'remote_chat', { 'command': 'remote_chat', 'result': 0, 'event_id': req_id, 'query_data': rc_modules} )
             elif rcr.get('backend') == "router":
+                self._note_robot_debug(device_id, 'router', 'Robot contacted the conversation router.')
                 # REMOTE CHAT CONVERSATION ENDPOINT
                 self._remote_chat.handle_request(device_id, rcr, self._robot_data.get_volley_data(device_id))
         elif eventname == "client-service-activity-log":
@@ -346,6 +394,7 @@ class MoxieServer:
             csa = json.loads(msg.payload)
             if csa.get("subtopic") == "query":
                 if csa.get("query") == "schedule":
+                    self._note_robot_debug(device_id, 'schedule', 'Robot requested its activity schedule.')
                     # SCHEDULE REQUEST - Robot asking what schedule to follow this session
                     logger.debug("Rx Schedule request.")
                     req_id = csa.get('request_id')
@@ -395,6 +444,16 @@ class MoxieServer:
             # These are per-client log messages
             logrec = json.loads(msg.payload)
             message = logrec.get("message", "")
+            # Translate a few known startup/fault signatures into fixed messages.
+            # Raw logs may contain family speech, credentials, or network details.
+            if 'std::regex_error' in message:
+                self._note_robot_debug(device_id, 'robot_fault', 'Robot reported a regular-expression error in its own software.', 'error')
+            elif 'SIGABRT' in message:
+                self._note_robot_debug(device_id, 'robot_fault', 'A robot process reported an abort signal.', 'error')
+            elif 'animation' in message.lower() and 'sleep' in message.lower() and ('missing' in message.lower() or 'not found' in message.lower()):
+                self._note_robot_debug(device_id, 'animation', 'Robot reported a missing Sleep animation.', 'warning')
+            elif 'bundle' in message.lower() and ('load' in message.lower() or 'local' in message.lower()):
+                self._note_robot_debug(device_id, 'assets', 'Robot reported local asset bundle activity.')
             # This empty power-board marker is not actionable server-side and
             # can bury useful diagnostics. Keep detailed battery/charging logs.
             if "[BSTATE_ERROR] [LizardErrorEvent]" not in message:
@@ -413,6 +472,8 @@ class MoxieServer:
     def ingest_robot_state(self, device_id, statedata):
         self._robot_data.put_state(device_id, statedata)
         mode = statedata.get('mode')
+        if mode in ('active', 'sleep', 'idle', 'connecting', 'awake', 'charging'):
+            self._note_robot_debug(device_id, 'mode', f'Robot reported mode: {mode}.')
         command = RobotCommandEvent.objects.filter(
             device__device_id=device_id, status='sent',
         ).order_by('-created_at').first()
@@ -546,6 +607,7 @@ class MoxieServer:
                     last_wake_device=device_id,
                 )
                 logger.info("Wake command queued for %s", device_id)
+                self._note_robot_debug(device_id, 'wake', 'Wake published; waiting for robot confirmation.')
                 return True
         return False
 
@@ -733,6 +795,9 @@ class MoxieServer:
         result = self._client.publish(topic, payload=payload)
         if result.rc != mqtt.MQTT_ERR_SUCCESS:
             logger.warning("MQTT publish failed for %s: %s", topic, mqtt.error_string(result.rc))
+            parts = topic.split('/')
+            if len(parts) >= 4 and parts[1] == 'devices':
+                self._note_robot_debug(parts[2], 'publish', 'Server could not publish a robot command.', 'error')
             with self._status_lock:
                 self._status["publish_failures"] += 1
         return result
